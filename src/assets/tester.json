@@ -1,0 +1,229 @@
+{
+    "type": "FeatureCollection",
+    "features": [
+      {
+        "type": "Feature",
+        "id": 8604709,
+        "geometry": {
+          "type": "LineString",
+          "coordinates": [
+            [
+              -71.0955666,
+              42.3796478
+            ],
+            [
+              -71.0956795,
+              42.3796808
+            ],
+            [
+              -71.0957701,
+              42.3796964
+            ]
+          ]
+        },
+        "properties": {
+          "attribution": "Office of Geographic and Environmental Information (MassGIS)",
+          "bicycle": "designated",
+          "condition": "deficient",
+          "cycleway": "lane",
+          "highway": "secondary",
+          "lanes": "2",
+          "lanes:forward": "2",
+          "massgis:ref": "0 N333",
+          "massgis:way_id": "164573",
+          "name": "Somerville Avenue",
+          "source": "massgis_import_v0.1_20071008141127",
+          "surface": "asphalt",
+          "turn:lanes:forward": "through|right",
+          "width": "19.8"
+        }
+      },
+      {
+        "type": "Feature",
+        "id": 8604726,
+        "geometry": {
+          "type": "LineString",
+          "coordinates": [
+            [
+              -71.1106062,
+              42.3993875
+            ],
+            [
+              -71.1105195,
+              42.3993565
+            ],
+            [
+              -71.1104419,
+              42.3993278
+            ],
+            [
+              -71.1103578,
+              42.3992993
+            ]
+          ]
+        },
+        "properties": {
+          "attribution": "Office of Geographic and Environmental Information (MassGIS)",
+          "bicycle": "designated",
+          "bridge": "yes",
+          "condition": "fair",
+          "cycleway": "lane",
+          "hgv": "yes",
+          "highway": "secondary",
+          "lanes": "3",
+          "lanes:backward": "2",
+          "lanes:forward": "1",
+          "layer": "1",
+          "massgis:way_id": "122420",
+          "maxspeed": "30 mph",
+          "name": "Broadway",
+          "source": "massgis_import_v0.1_20071008141127",
+          "source:hgv": "MassGIS",
+          "source:maxspeed": "massgis",
+          "turn:lanes:backward": "|right",
+          "width": "28.0"
+        }
+      },
+      {
+        "type": "Feature",
+        "id": 8604752,
+        "geometry": {
+          "type": "LineString",
+          "coordinates": [
+            [
+              -71.0846005,
+              42.3971753
+            ],
+            [
+              -71.0846078,
+              42.3971502
+            ],
+            [
+              -71.0847687,
+              42.396707
+            ],
+            [
+              -71.0847746,
+              42.3966641
+            ],
+            [
+              -71.0847638,
+              42.3966281
+            ],
+            [
+              -71.0847404,
+              42.3965966
+            ],
+            [
+              -71.0847056,
+              42.3965679
+            ],
+            [
+              -71.0846586,
+              42.3965386
+            ]
+          ]
+        },
+        "properties": {
+          "attribution": "Office of Geographic and Environmental Information (MassGIS)",
+          "highway": "trunk_link",
+          "lanes": "2",
+          "lit": "yes",
+          "massgis:way_id": "110437",
+          "oneway": "yes",
+          "source": "massgis_import_v0.1_20071008141127; massgis_import_v0.1_20071009093301",
+          "surface": "asphalt",
+          "turn:lanes": "left|left"
+        }
+      },
+      {
+        "type": "Feature",
+        "id": 8604756,
+        "geometry": {
+          "type": "LineString",
+          "coordinates": [
+            [
+              -71.0886374,
+              42.3806562
+            ],
+            [
+              -71.0890728,
+              42.3805478
+            ],
+            [
+              -71.0894095,
+              42.3804269
+            ],
+            [
+              -71.0897087,
+              42.3803134
+            ],
+            [
+              -71.0899473,
+              42.3802233
+            ],
+            [
+              -71.09032,
+              42.380056
+            ],
+            [
+              -71.090653,
+              42.379881
+            ]
+          ]
+        },
+        "properties": {
+          "attribution": "Office of Geographic and Environmental Information (MassGIS)",
+          "condition": "good",
+          "highway": "secondary",
+          "massgis:ref": "0 N334",
+          "massgis:way_id": "116133",
+          "name": "Washington Street",
+          "oneway": "yes",
+          "source": "massgis_import_v0.1_20071008141127",
+          "surface": "asphalt",
+          "width": "18.3"
+        }
+      },
+      {
+        "type": "Feature",
+        "id": 8604781,
+        "geometry": {
+          "type": "LineString",
+          "coordinates": [
+            [
+              -71.1314593,
+              42.4147212
+            ],
+            [
+              -71.1315633,
+              42.4146876
+            ],
+            [
+              -71.1316833,
+              42.4146473
+            ],
+            [
+              -71.1317648,
+              42.4146235
+            ],
+            [
+              -71.1318589,
+              42.4146019
+            ]
+          ]
+        },
+        "properties": {
+          "attribution": "Office of Geographic and Environmental Information (MassGIS)",
+          "condition": "good",
+          "highway": "secondary",
+          "lanes": "2",
+          "massgis:way_id": "139049",
+          "name": "Mystic Valley Parkway",
+          "oneway": "yes",
+          "source": "massgis_import_v0.1_20071008141127",
+          "width": "18.3"
+        }
+      }
+    ]
+}
