@@ -1,9 +1,9 @@
 /* global fetch */
 import React, {Component} from 'react';
-import MapGL from 'react-map-gl';
+import ReactMapGL from 'react-map-gl';
 import ArcLayer from './components/arcLayer';
 import {scaleQuantile} from 'd3-scale';
-import deckGL from 'deck.gl';
+
 import roads from './assets/pruned_extra_roads.json';
 import testerRoads from './assets/tester.json';
 import mapboxgl from 'mapbox-gl';
@@ -25,8 +25,8 @@ class App extends Component {
         maxZoom: 21,
         pitch: 50,
         bearing: 50,
-        interactive: true
-        
+        interactive: true,
+        featuresById: {}
       },
       hoveredItem:null,
       hoveredColor: [55, 229, 232,100]
@@ -34,7 +34,9 @@ class App extends Component {
   }
 
    componentDidMount(){
-    roads.features.forEach((road,ind) => {
+     const featuresById = {}
+  roads.features.forEach((road,ind) => {
+   // featuresById[road.id]=road
       if(ind>5 && ind <1000){
         road.properties.color="#f48942"
       } else {
@@ -45,12 +47,13 @@ class App extends Component {
     this.setState({data:roads.features})
 
 
-
+  
                    
     this.map = this.reactMap.getMap();
     
      this.map.on('load', () => {
        //add the GeoJSON layer here
+       console.log(this.state.data)
         console.log(this.map)
        this.map.addLayer({
             "id": "segments",
@@ -59,7 +62,7 @@ class App extends Component {
                 "type": "geojson",
                 "data": {
                     "type": "FeatureCollection",
-                    "features": this.state.data                   
+                    "features": this.state.data
                 }
                     
             },
@@ -68,8 +71,14 @@ class App extends Component {
                 "line-cap": "round"
             },
             "paint": {
-                "line-color": ['get','color'],
-                "line-width": 5
+                //"line-color": ['get','color'],
+                "line-width": 5,
+                "line-color": ["case",
+                ["boolean", ["feature-state", "hover"], false],
+                '#afd36b',
+                '#6a9bd8'
+            ]
+
             }
         })
 
@@ -78,12 +87,7 @@ class App extends Component {
        
       })
    
-     this.map.on('mousemove', 'segments', (e)=>{
-       var feature =this.map.queryRenderedFeatures(e.point);
-      
-      })
-
-
+   
     ////////////////////////////////////////////////////////
     /*const linePoints = [];
     roads.features.forEach(road => {road.properties.color=[244, 187, 65, 200]})
@@ -132,6 +136,44 @@ class App extends Component {
        this.setState({points:points})
     });*/
    
+  }
+
+  hover=(info)=>{
+  
+  var feature = this.map.queryRenderedFeatures([info.offsetCenter.x,info.offsetCenter.y],'segments');
+  
+    if(feature.length>0){
+      var hoveredSegId = feature[0].id
+      if (hoveredSegId) {     
+        this.map.setFeatureState({source: 'segments', id: hoveredSegId}, { hover: true});
+    } 
+      
+     /* var newData =  this.state.data.map(featureInLoop=>{
+        
+        if(feature[0].id==featureInLoop.id){
+          featureInLoop.properties.color = '#6a9bd8';
+       
+        } else {
+          featureInLoop.properties.color = '#afd36b';
+        }
+        
+        return featureInLoop
+      })
+      //this.setState({data:newData});
+      
+    
+      this.map.getSource('segments').setData({
+        "type": "FeatureCollection",
+        "features": [newData]                  
+    });
+     */
+
+    }
+    if(feature.length==0){
+      if(hoveredSegId){
+      this.map.setFeatureState({source: 'segments', id: hoveredSegId}, { hover: false});
+      }
+    }
   }
   _onViewportChange(viewport){
     this.setState({
@@ -183,21 +225,22 @@ class App extends Component {
     return (
       <div className="App">
 
-     <MapGL
-      ref={(reactMap) => { this.reactMap = reactMap; }} 
+     <ReactMapGL
+      ref={(reactMap) => { this.reactMap = reactMap }} 
           {...this.state.viewport}
           mapStyle="mapbox://styles/pagnito/cjluz0klc24v72sp7471bbxwq"
           onViewportChange={viewport => this._onViewportChange(viewport)}
-         
+          onHover={this.hover}
+      
           mapboxApiAccessToken={MAPBOX_TOKEN}>
-          
+         
           {/*<ArcLayer
             testerRoads={this.state.testerRoads}
             onHover={this.onHover}
             viewport={this.state.viewport}
             //arcs={this.state.points} 
           segments={this.state.segments}/>*/}
-     </MapGL>
+     </ReactMapGL>
         
         {this.renderToolTip(this.state.hoveredItem)}
       </div>
