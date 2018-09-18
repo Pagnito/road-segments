@@ -141,7 +141,13 @@ class App extends Component {
               "line-width": 5,
               "line-color": ["case",
               ["boolean", ["feature-state", "connection"], false],
-              ['#1dc6ad'],
+              ['case', 
+              ['==', ['feature-state', 'color'], 'light-blue'],'#42d1f4',
+              ['==', ['feature-state', 'color'], 'blue'],'#0431e5',
+              ['==', ['feature-state', 'color'], 'purple'],'#e038d7',
+              ['==', ['feature-state', 'color'], 'red'],'#f72222',
+              ['==', ['feature-state', 'color'], 'yellow'],'#f9f345',
+              '#fff'],           
               'rgba(244, 232, 66, 0.0)'
               ]            
            }     
@@ -167,7 +173,7 @@ class App extends Component {
   hover=(info)=>{
     
     var feature = this.map.queryRenderedFeatures([info.offsetCenter.x,info.offsetCenter.y],'segments');
-    console.log(feature[0])
+    //console.log(feature[0])
       if(feature.length>0){
           var hoveredSegId = feature[0].id;       
           this.state.currAndPrev.push(hoveredSegId);
@@ -176,27 +182,72 @@ class App extends Component {
                 this.map.setFeatureState({source: 'segments', id: hoveredSegId}, { hover: true});
                 var connections = JSON.parse(feature[0].properties.connections)
              
-                if(connections.continue){
-                 
-                    connections.continue.forEach(connectionId=>{
+                if(connections.continue){              
+                    connections.continue.forEach(connectionId=>{                   
                       if(Number(connectionId)!==hoveredSegId){
-                        this.map.setFeatureState({source: 'connectionSegs', id: connectionId}, { connection: true});
-                        //console.log(typeof hoveredSegId)
+                        console.log(connectionId)
+                        this.map.setFeatureState({source: 'connectionSegs', id: connectionId}, { connection: true,
+                                                                                                 color:'light-blue'                 });
+                        
                         //console.log(typeof connectionId)
                        }
                      })
-                 }
-             } 
-          if(this.state.currAndPrev.length > 2){
-          
-              var currAndPrev = this.state.currAndPrev.slice(-2)
-              this.setState({ currAndPrev: currAndPrev })
-              //console.log(currAndPrev)
-              if(this.state.currAndPrev[0] !== this.state.currAndPrev[1]){
-                this.map.setFeatureState({source: 'segments', id: this.state.currAndPrev[0]}, { hover: false});
-               }
-           }   
-       }
+                   }
+                  if(connections.merge){              
+                      connections.merge.forEach(connectionId=>{                   
+                        if(Number(connectionId)!==hoveredSegId){
+                          console.log(connectionId)
+                          this.map.setFeatureState({source: 'connectionSegs', id: connectionId}, { connection: true,
+                                                                                                  color:'red'                 });
+                          
+                          //console.log(typeof connectionId)
+                        }
+                      })
+                   }
+                  if(connections.split){              
+                      connections.split.forEach(connectionId=>{                   
+                        if(Number(connectionId)!==hoveredSegId){
+                          console.log(connectionId)
+                          this.map.setFeatureState({source: 'connectionSegs', id: connectionId}, { connection: true,
+                                                                                                  color:'yellow'                 });
+                          
+                          //console.log(typeof connectionId)
+                        }
+                      })
+                   }
+                  if(connections.right){              
+                      connections.right.forEach(connectionId=>{                   
+                        if(Number(connectionId)!==hoveredSegId){
+                          console.log(connectionId)
+                          this.map.setFeatureState({source: 'connectionSegs', id: connectionId}, { connection: true,
+                                                                                                  color:'blue'                 });
+                          
+                          //console.log(typeof connectionId)
+                        }
+                      })
+                    }
+                  if(connections.left){              
+                      connections.left.forEach(connectionId=>{                   
+                        if(Number(connectionId)!==hoveredSegId){
+                          console.log(connectionId)
+                          this.map.setFeatureState({source: 'connectionSegs', id: connectionId}, { connection: true,
+                                                                                                  color:'purple'                 });
+                          
+                          //console.log(typeof connectionId)
+                        }
+                      })
+                  }
+                } 
+              if(this.state.currAndPrev.length > 2){
+              
+                  var currAndPrev = this.state.currAndPrev.slice(-2)
+                  this.setState({ currAndPrev: currAndPrev })
+                  //console.log(currAndPrev)
+                  if(this.state.currAndPrev[0] !== this.state.currAndPrev[1]){
+                    this.map.setFeatureState({source: 'segments', id: this.state.currAndPrev[0]}, { hover: false});
+                  }
+              }   
+          }
       if(feature.length==0){   
         if(Object.keys(this.state.hoveredSeg).length>0){         
           this.map.setFeatureState({source: 'segments', id: this.state.hoveredSeg.id}, { hover: false});
