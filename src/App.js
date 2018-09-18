@@ -164,7 +164,7 @@ class App extends Component {
    
   }
 
-  /*hover=(info)=>{
+  hover=(info)=>{
     
     var feature = this.map.queryRenderedFeatures([info.offsetCenter.x,info.offsetCenter.y],'segments');
     console.log(feature[0])
@@ -203,7 +203,7 @@ class App extends Component {
           this.setState({hoveredSeg:{}})
          } 
        }
-  }*/
+  }
 
 
   /////////////////////////////////////////
