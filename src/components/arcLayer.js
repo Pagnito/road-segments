@@ -15,35 +15,6 @@ render() {
     }
    
     const layers = [
-     /*new GeoJsonLayer({
-        id: 'geojson-layer',
-        data:this.props.segments,
-        pickable: true,
-        filled: true,
-        extruded: false,
-        getLineColor: d=>d.properties.color,
-        
-        lineWidthScale: 3,
-        lineWidthMinPixels: 1,
-        onHover:this.props.onHover,
-        updateTriggers: {
-          getLineColor: d=>d.properties.color
-        },
-      }),
-      new LineLayer({
-        id: 'line-layer',
-        data:this.props.testerRoads,
-        pickable: true,
-        filled: true,
-        extruded: false,
-        
-        getColor: [179, 244, 66,500],
-        getSourcePosition: d => d.from,
-        getTargetPosition: d => d.to,
-        getStrokeWidth: 10,
- 
-       
-      })*/
         /*,
       new ArcLayer({
         id: 'arc',

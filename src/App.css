@@ -1,11 +1,34 @@
 .toolTip {
+    color:white;
     position: absolute;
     z-index: 100;
-    height: 180px;
-    width:180px;
-    background: rgba(255,255,255,0.6);
+    min-height: 180px;
+    width:220px;
+    background: rgba(0,0,0,0.6);
     padding: 10px;
     border-radius:5px;
+    word-wrap: break-word
+}
+#continueToolTip {
+    color:#42d1f4;
+}
+#rightToolTip {
+    color:#0431e5;
+}
+#leftToolTip {
+    color:#e038d7;
+}
+#mergeToolTip {
+    color:#f72222;
+}
+#splitToolTip {
+    color:#f9f345;
+}
+
+.toolTip ul {
+    list-style-type: none;
+    margin-left: -15px;
+    margin-top: 5px;
 }
 .bold {
     font-weight:bold;
