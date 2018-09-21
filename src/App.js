@@ -151,7 +151,49 @@ class App extends Component {
     });*/
    
   }
+  handleGeoJSONUpload = (e) => {  
+    const promise = new Promise ((resolve,reject)=>{
+          let reader = new FileReader();
+          reader.readAsText(e.target.files[0]);
+          reader.onload = () => {                
+              let geoJson = JSON.parse(reader.result);
+            // console.log(JSON.parse(reader.result))
+              this.setState({i95Points: geoJson});
+              resolve() 
+              console.log(geoJson) 
+          }
+      })
+    promise.then(()=>{
+      console.log('hey')
+      if(this.state.i95Points.connections){
+          for(var key in this.state.i95Points.connections){
+            for(var id in this.state.i95Points.connections[key]){
+              this.state.i95Points.connections[key][id] = this.state.i95Points.connections[key][id].map(connectId =>{         
+                return connectId.replace('.','')
+              })
+            }
+            this.state.i95Points.connections[key.replace('.','')] = this.state.i95Points.connections[key];
+            delete this.state.i95Points.connections[key];  
+          
+          }     
+          this.setState({connections:this.state.i95Points.connections})
+       }
+    this.state.i95Points.features.forEach((road,ind) => {  
+        road.properties.color='#afd36b';     
+        road.id = road.id.toString().replace('.','');
+       // road.geometry.coordinates.map(coords=>{coords.reverse()})
 
+        ///injecting connections obj into properties/
+        Object.keys(this.state.i95Points.connections).forEach(connection=>{
+          if(road.id==connection){        
+            road.properties.connections=this.state.i95Points.connections[connection];
+          }
+        })          
+      })
+      this.map.getSource('segments').setData(this.state.i95Points)
+      console.log(this.map.getSource('segments'))
+    })
+  }
   hover=(info)=>{
     
     var feature = this.map.queryRenderedFeatures([info.offsetCenter.x,info.offsetCenter.y],'segments');
@@ -389,7 +431,7 @@ class App extends Component {
      </ReactMapGL>
         <div id="controls">
         <div className="controlsTitleItem" >
-           <input type="file" name="file-input" id="file-input"></input>
+           <input onChange={this.handleGeoJSONUpload} accept='json' type="file" name="file-input" id="file-input"></input>
            <label htmlFor="file-input">
             <i className="fas fa-upload"></i>
            </label>
