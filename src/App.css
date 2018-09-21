@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css?family=Quicksand:700');
 .toolTip {
     color:white;
     position: absolute;
@@ -39,4 +40,33 @@
 }
 .mapboxgl-map {
     min-height: 100vh;
+}
+#controls {
+    position: absolute;
+    top:0px;
+    right:0px;
+    min-height:100vh;
+    min-width:20%;
+    background-color: rgba(0,0,0,.6);
+}
+.controlsTitleItem{
+    color:white;
+    font-family: 'quicksand';
+    margin: 20px;
+    cursor: pointer;
+}
+.controlsTitleItem > input {
+    display: none;
+}
+.fa-upload {
+    color:white;
+    font-size: 20px;
+    margin-right:10px;
+    margin-left:10px;
+    transition: all .3s ease-out;
+    cursor: pointer;
+}
+.fa-upload:hover {
+    color:#FEA62F;
+    transform: scale(1.3);
 }

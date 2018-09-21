@@ -4,7 +4,7 @@ import ReactMapGL from 'react-map-gl';
 import ArcLayer from './components/arcLayer';
 //import roads from './assets/pruned_extra_roads.json';
 //import testerRoads from './assets/tester.json';
-import wholeMap from './assets/wholeMap.json';
+import wholeMap from './assets/satmapconnected.json';
 import './App.css';
 
 const MAPBOX_TOKEN = "pk.eyJ1IjoicGFnbml0byIsImEiOiJjamxhMnY4a3UwNDVhM3BxaTV1NWM3ZGR6In0.pRhJryLN4D7NxD5ZbC1MbA";
@@ -48,10 +48,10 @@ class App extends Component {
             //console.log(wholeMap.connections)
             this.setState({connections:wholeMap.connections})
             
-          wholeMap.map.features.forEach((road,ind) => {  
+          wholeMap.features.forEach((road,ind) => {  
               road.properties.color='#afd36b'
               road.id = road.id.replace('.','')
-              road.geometry.coordinates.map(coords=>{coords.reverse()})
+             // road.geometry.coordinates.map(coords=>{coords.reverse()})
 
               ///injecting connections obj into properties
               Object.keys(wholeMap.connections).forEach(connection=>{
@@ -60,8 +60,8 @@ class App extends Component {
                 }
               })          
             })
-            //console.log(wholeMap.map)
-            this.setState({i95Points:wholeMap.map.features})
+            //console.log(wholeMap.features)
+            this.setState({i95Points:wholeMap.features})
           /*
             if(!error){
               resolve(wholeMap.map.features)
@@ -133,9 +133,7 @@ class App extends Component {
            }     
       })    
      })
-     this.map.on('mousemove',()=>{
-       console.log('this.map')
-     })
+     
      
     //////////////////////////////////////////////////////////////////
    
@@ -227,38 +225,42 @@ class App extends Component {
                       let connectionObj1 = JSON.parse(this.state.currAndPrev[0].properties.connections)  
             
                       this.map.setFeatureState({source: 'segments', id: this.state.currAndPrev[0].id}, { hover: false});
-
-                            connectionObj1.continue.forEach(connectionId=>{                                                                
-                                this.map.setFeatureState({source: 'connectionSegs', id: connectionId}, { connection: false,
-                                                                                                         color:'light-blue'});                              
-                                //console.log(typeof connectionId)                            
-                          })
-                                                       
-                        connectionObj1.merge.forEach(connectionId=>{                                                                       
-                                this.map.setFeatureState({source: 'connectionSegs', id: connectionId}, { connection: false,
-                                                                                                         color:'red'      });                             
-                                //console.log(typeof connectionId)                             
-                          })
-                                                   
-                        connectionObj1.split.forEach(connectionId=>{                                                                    
-                                this.map.setFeatureState({source: 'connectionSegs', id: connectionId}, { connection: false,
-                                                                                                         color:'yellow'    });                              
-                                //console.log(typeof connectionId)                             
-                          })
-                                                 
-                        connectionObj1.right.forEach(connectionId=>{                                                                    
-                                this.map.setFeatureState({source: 'connectionSegs', id: connectionId}, { connection: false,
-                                                                                                         color:'blue'     });                              
-                                //console.log(typeof connectionId)                            
-                          })                     
-                                
-                        connectionObj1.left.forEach(connectionId=>{                                                                        
-                                this.map.setFeatureState({source: 'connectionSegs', id: connectionId}, { connection: false,
-                                                                                                         color:'purple'    });                             
-                              //console.log(typeof connectionId)                     
-                          })
-                          //////////////////prev////////////
-                          
+                      if(connectionObj1.continue){              
+                          connectionObj1.continue.forEach(connectionId=>{                                                                
+                                  this.map.setFeatureState({source: 'connectionSegs', id: connectionId}, { connection: false,
+                                                                                                          color:'light-blue'});                              
+                                  //console.log(typeof connectionId)                            
+                            })
+                        }    
+                        if(connectionObj1.merge){                                        
+                          connectionObj1.merge.forEach(connectionId=>{                                                                       
+                                  this.map.setFeatureState({source: 'connectionSegs', id: connectionId}, { connection: false,
+                                                                                                          color:'red'      });                             
+                                  //console.log(typeof connectionId)                             
+                            })
+                        }   
+                        if(connectionObj1.split){                                    
+                          connectionObj1.split.forEach(connectionId=>{                                                                    
+                                  this.map.setFeatureState({source: 'connectionSegs', id: connectionId}, { connection: false,
+                                                                                                          color:'yellow'    });                              
+                                  //console.log(typeof connectionId)                             
+                            })
+                         }  
+                         if(connectionObj1.right){                                  
+                          connectionObj1.right.forEach(connectionId=>{                                                                    
+                                  this.map.setFeatureState({source: 'connectionSegs', id: connectionId}, { connection: false,
+                                                                                                          color:'blue'     });                              
+                                  //console.log(typeof connectionId)                            
+                             })                     
+                           }  
+                         if(connectionObj1.left){                    
+                            connectionObj1.left.forEach(connectionId=>{                                                                        
+                                    this.map.setFeatureState({source: 'connectionSegs', id: connectionId}, { connection: false,
+                                                                                                            color:'purple'    });                             
+                                  //console.log(typeof connectionId)                     
+                              })
+                            //////////////////prev////////////
+                           } 
                      }
 
                  }   
@@ -268,38 +270,43 @@ class App extends Component {
         if(Object.keys(this.state.hoveredSeg).length>0){ 
             if(this.state.currAndPrev[1]){
                 var connectionsObj = JSON.parse(this.state.currAndPrev[1].properties.connections)  
-                      
+
+                if(connectionsObj.continue){                 
                    connectionsObj.continue.forEach(connectionId=>{                                                        
                             this.map.setFeatureState({source: 'connectionSegs', id: connectionId}, { connection: false,
                                                                                                     color:'light-blue'});                          
                             //console.log(typeof connectionId)                    
                       })
-                                            
+                    }   
+                if(connectionsObj.merge){                                      
                   connectionsObj.merge.forEach(connectionId=>{                                                      
                           this.map.setFeatureState({source: 'connectionSegs', id: connectionId}, { connection: false,
                                                                                                   color:'red'      });                         
                           //console.log(typeof connectionId)                   
                     })
-                                      
-                  connectionsObj.split.forEach(connectionId=>{                                                       
-                          this.map.setFeatureState({source: 'connectionSegs', id: connectionId}, { connection: false,
-                                                                                                  color:'yellow'    });                       
-                          //console.log(typeof connectionId)                  
-                    })
-                
-                          
+                  }  
+                if(connectionsObj.split){                                 
+                    connectionsObj.split.forEach(connectionId=>{                                                       
+                            this.map.setFeatureState({source: 'connectionSegs', id: connectionId}, { connection: false,
+                                                                                                    color:'yellow'    });                       
+                            //console.log(typeof connectionId)                  
+                      })
+                  }
+                if(connectionsObj.right){                        
                   connectionsObj.right.forEach(connectionId=>{                                                          
                           this.map.setFeatureState({source: 'connectionSegs', id: connectionId}, { connection: false,
                                                                                                   color:'blue'     });                        
                           //console.log(typeof connectionId)                    
                     })
-                                        
+                  }  
+                if(connectionsObj.left){                                  
                   connectionsObj.left.forEach(connectionId=>{                                                      
                           this.map.setFeatureState({source: 'connectionSegs', id: connectionId}, { connection: false,
                                                                                                   color:'purple'   });                     
                         //console.log(typeof connectionId)
                         
                     })
+                  }
               }       
           this.map.setFeatureState({source: 'segments', id: this.state.hoveredSeg.id}, { hover: false});
           this.setState({hoveredSeg:{}})
@@ -348,11 +355,11 @@ class App extends Component {
               <div><span className="bold">Oneway:</span> {segment.properties.oneway}</div>
               <div><span className="bold">Connections:</span> 
                 <ul>
-                  <li ><span id="continueToolTip">Continue:</span>{mapConnections(connectionsObj.continue)} </li>
-                  <li ><span id="rightToolTip">right:</span> {mapConnections(connectionsObj.right)} </li>
-                  <li ><span id="leftToolTip">left:</span>{mapConnections(connectionsObj.left)} </li>
-                  <li ><span id="mergeToolTip">merge:</span>{mapConnections(connectionsObj.merge)} </li>
-                  <li ><span id="splitToolTip">split:</span>{mapConnections(connectionsObj.split)} </li>
+                  <li ><span id="continueToolTip">Continue:</span>{mapConnections(connectionsObj.continue || [])} </li>
+                  <li ><span id="rightToolTip">Right:</span> {mapConnections(connectionsObj.right || [])} </li>
+                  <li ><span id="leftToolTip">Left:</span>{mapConnections(connectionsObj.left || [])} </li>
+                  <li ><span id="mergeToolTip">Merge:</span>{mapConnections(connectionsObj.merge || [])} </li>
+                  <li ><span id="splitToolTip">Split:</span>{mapConnections(connectionsObj.split || [])} </li>
                 </ul>
               </div>
             </div>
@@ -380,7 +387,15 @@ class App extends Component {
             //arcs={this.state.points} 
           segments={this.state.segments}/>*/}
      </ReactMapGL>
-        
+        <div id="controls">
+        <div className="controlsTitleItem" >
+           <input type="file" name="file-input" id="file-input"></input>
+           <label htmlFor="file-input">
+            <i className="fas fa-upload"></i>
+           </label>
+            Upload Your GeoJson
+         </div>
+        </div>
         {this.renderToolTip(this.state.hoveredSeg)}
       </div>
     );
