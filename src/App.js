@@ -152,7 +152,7 @@ class App extends Component {
         if(cons !== undefined)
         {
             cons.forEach(con_id => {
-                if(Number(con_id) !== hover_id)
+                if(hover_id === null || Number(con_id) !== hover_id)
                 {
                     this.map.setFeatureState({source: "connectionSegs", id: con_id},
                                              {connection: enable, color: color});
@@ -191,11 +191,11 @@ class App extends Component {
 
                           this.map.setFeatureState({source: 'segments', id: this.state.currAndPrev[0].id}, { hover: false});
 
-                            this.set_connection_color(hoveredSegId, prev_cons.continue, "light-blue", false);
-                            this.set_connection_color(hoveredSegId, prev_cons.merge, "red", false);
-                            this.set_connection_color(hoveredSegId, prev_cons.split, "yellow", false);
-                            this.set_connection_color(hoveredSegId, prev_cons.right, "blue", false);
-                            this.set_connection_color(hoveredSegId, prev_cons.left, "purple", false);
+                            this.set_connection_color(null, prev_cons.continue, "light-blue", false);
+                            this.set_connection_color(null, prev_cons.merge, "red", false);
+                            this.set_connection_color(null, prev_cons.split, "yellow", false);
+                            this.set_connection_color(null, prev_cons.right, "blue", false);
+                            this.set_connection_color(null, prev_cons.left, "purple", false);
                          }
                      }
               }
@@ -205,11 +205,11 @@ class App extends Component {
             if(this.state.currAndPrev[1]){
                 var connections = JSON.parse(this.state.currAndPrev[1].properties.connections)
 
-                this.set_connection_color(hoveredSegId, connections.continue, "light-blue", false);
-                this.set_connection_color(hoveredSegId, connections.merge, "red", false);
-                this.set_connection_color(hoveredSegId, connections.split, "yellow", false);
-                this.set_connection_color(hoveredSegId, connections.right, "blue", false);
-                this.set_connection_color(hoveredSegId, connections.left, "purple", false);
+                this.set_connection_color(null, connections.continue, "light-blue", false);
+                this.set_connection_color(null, connections.merge, "red", false);
+                this.set_connection_color(null, connections.split, "yellow", false);
+                this.set_connection_color(null, connections.right, "blue", false);
+                this.set_connection_color(null, connections.left, "purple", false);
               }
           this.map.setFeatureState({source: 'segments', id: this.state.hoveredSeg.id}, { hover: false});
           this.setState({hoveredSeg:{}})
