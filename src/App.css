@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css?family=Quicksand:700');
 .toolTip {
     color:white;
-    position: absolute;
+  
     z-index: 100;
     min-height: 180px;
     width:220px;
@@ -9,6 +9,13 @@
     padding: 10px;
     border-radius:5px;
     word-wrap: break-word
+}
+.toolTipWrap {
+    position: absolute;
+    z-index: 100;
+    left:0px;
+    bottom:0px;
+    display: flex;
 }
 #continueToolTip {
     color:#42d1f4;
