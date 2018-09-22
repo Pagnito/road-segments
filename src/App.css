@@ -1,4 +1,47 @@
 @import url('https://fonts.googleapis.com/css?family=Quicksand:700');
+.App {
+    overflow: hidden;
+}
+.fa-bars {
+    color:#FEA62F;
+    font-size: 30px;
+    margin:15px;
+    cursor: pointer;
+    transition: all .2s;
+}
+.fa-bars-outside {
+    color:#FEA62F;
+    font-size: 30px;
+    cursor: pointer;
+    position: absolute;
+    right:10px;
+    top:0px;
+}
+.fa-bars:hover {
+    color:#d6530c;
+}
+.pullOut {
+    animation: pullOut .3s ease-out forwards;
+}
+.pullIn {
+    animation: pullIn .3s ease-out forwards;
+}
+@keyframes pullOut {
+    0% {
+        transform: translateX(100%)
+    }
+    100% {
+        transform: translateX(-100%)
+    }
+}
+@keyframes pullIn {
+    0% {
+        transform: translateX(-100%)
+    }
+    100% {
+        transform: translateX(100%)
+    }
+}
 .toolTip {
     color:white;
   
@@ -49,12 +92,13 @@
     min-height: 100vh;
 }
 #controls {
-    position: absolute;
+    position: fixed;
     top:0px;
-    right:0px;
+    right:-20%;
     min-height:100vh;
     min-width:20%;
     background-color: rgba(0,0,0,.6);
+   
 }
 .controlsTitleItem{
     color:white;

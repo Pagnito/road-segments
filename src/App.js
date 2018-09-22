@@ -12,6 +12,7 @@ class App extends Component {
   constructor(props){
     super(props)
     this.state={
+      navVisible:false,
       connections:[],
       hoveredSeg:{},
       selectedSeg: {},
@@ -32,6 +33,22 @@ class App extends Component {
       }     
     }
   }
+
+
+  pullOutOrInNav=()=>{
+    var navBtn = document.getElementById('navBtn');
+    if(this.state.navVisible){
+      navBtn.setAttribute('style', 'display:block;')
+      document.getElementById('controls').classList.remove('pullOut');   
+      document.getElementById('controls').classList.add('pullIn');
+      this.setState({navVisible:false})
+    } else {
+      navBtn.setAttribute('style', 'display:none;')
+      document.getElementById('controls').classList.remove('pullIn');
+      document.getElementById('controls').classList.add('pullOut');
+      this.setState({navVisible:true})
+    }
+  }
   processData = (data) => { 
       if(data.connections){
         for(var key in data.connections){
@@ -50,7 +67,11 @@ class App extends Component {
       }
       
      data.features.forEach((road,ind) => {  
-        road.properties.color='#afd36b'
+       if(ind%2==0){
+        road.properties.color='#fca820'
+       } else {
+        road.properties.color='#ffd899'
+       }
         road.id = road.id.toString().indexOf('.') > 0 ? road.id.replace('.','') : road.id      
       // road.geometry.coordinates.map(coords=>{coords.reverse()})
 
@@ -93,8 +114,8 @@ class App extends Component {
                     "line-width": 5,
                     "line-color": ["case",
                     ["boolean", ["feature-state", "hover"], false],
-                    ['get','color'],
-                    '#fca820'
+                    '#afd36b',
+                    ['get','color']                 
                     ]                          
                 }
             });             
@@ -434,7 +455,7 @@ class App extends Component {
   render() {
     return (
       <div className="App">
-
+      
      <ReactMapGL
       ref={(reactMap) => { this.reactMap = reactMap }} 
           {...this.state.viewport}
@@ -451,7 +472,9 @@ class App extends Component {
             //arcs={this.state.points} 
           segments={this.state.segments}/>*/}
      </ReactMapGL>
+     <i id="navBtn" onClick={this.pullOutOrInNav} className="fas fa-bars fa-bars-outside"></i>
         <div id="controls">
+        <i  onClick={this.pullOutOrInNav} className="fas fa-bars"></i>
         <div className="controlsTitleItem" >
            <input onChange={this.handleGeoJSONUpload} accept='json' type="file" name="file-input" id="file-input"></input>
            <label htmlFor="file-input">
@@ -461,8 +484,8 @@ class App extends Component {
          </div>
         </div>
         <div className="toolTipWrap">
-        {this.renderToolTip(this.state.hoveredSeg)}
-        {this.renderToolTip(this.state.selectedSegToolTip)}
+          {this.renderToolTip(this.state.hoveredSeg)}
+          {this.renderToolTip(this.state.selectedSegToolTip)}
         </div>
       </div>
     );
