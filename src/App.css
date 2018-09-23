@@ -100,11 +100,81 @@
     background-color: rgba(0,0,0,.6);
    
 }
+.controlsInputItem::placeholder {
+    color: rgba(255,255,255,.8)
+}
+.controlsInputItem{
+    color:white;
+    font-family: 'quicksand';
+    margin: 20px;
+    background-color: transparent;
+    border: none;
+    border-bottom: 2px solid white;
+    width:90%;
+    height:30px;
+    font-size: 20px;
+    outline: none;
+}
+
+.inputParent {
+    width:100%;
+    min-height:40px; 
+    display: flex;
+}
+.inputsWrap {
+    min-height: 100px;
+    width:100%;
+
+}
+.searchList {
+    margin-top:20px;
+    max-height:60vh;
+    overflow-y:scroll;
+    width:110%;
+    min-height: 70vh;
+}
+.scrollBarHider {
+    width:100%;
+    min-height:70vh;
+}
+.searchBtn {
+    color:#FEA62F;
+    font-size: 35px;
+    margin-right:20px;
+    margin-left:5px;
+    transition: all .3s ease-out;
+    cursor: pointer;
+    margin-top: 20px;
+}
+.searchItem {
+    margin-left:30px;
+    color:white;
+    font-family: 'quicksand';
+    font-size: 18px;
+    cursor: pointer;
+}
+.searchItemWrap {
+    width:100%;
+    height:50px;
+    display:flex;
+    cursor: pointer;
+    align-items: center
+}
+.searchItemWrap:hover {
+    background-color: #d6530c;
+    
+}
+.searchBtn:active {
+    transform: scale(0.9);
+}
+.searchBtn:hover {
+    color:#d6530c;
+}
 .controlsTitleItem{
     color:white;
     font-family: 'quicksand';
     margin: 20px;
-    cursor: pointer;
+   
 }
 .controlsTitleItem > input {
     display: none;

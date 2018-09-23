@@ -12,6 +12,7 @@ class App extends Component {
   constructor(props){
     super(props)
     this.state={
+      findSegId:'',
       navVisible:false,
       connections:[],
       hoveredSeg:{},
@@ -20,6 +21,7 @@ class App extends Component {
       currAndPrev:[],
       currAndPrevForClick:[],
       startingPoint: [-71.063,42.558],
+      featureObjFromArr:{},
       viewport: {
         width: window.innerWidth,
         height: window.innerHeight,
@@ -50,6 +52,7 @@ class App extends Component {
     }
   }
   processData = (data) => { 
+      
       if(data.connections){
         for(var key in data.connections){
             for(var id in data.connections[key]){
@@ -67,7 +70,7 @@ class App extends Component {
       }
       
      data.features.forEach((road,ind) => {  
-       if(ind%2==0){
+       if(ind%2===0){
         road.properties.color='#fca820'
        } else {
         road.properties.color='#ffd899'
@@ -78,14 +81,21 @@ class App extends Component {
         ///injecting connections obj into properties
         if(data.connections){
             Object.keys(data.connections).forEach(connection=>{
-              if(road.id==connection){        
+              if(road.id===connection){        
                 road.properties.connections=data.connections[connection];
               }
             })   
         }       
       })
       //console.log(data.features)
-      this.setState({i95Points:data.features})
+      this.setState({i95Points:data.features});
+
+      let featureObjFromArr = {};
+      data.features.map(feature => {
+        let featureId = feature.id.toString().indexOf('.') > 0 ? feature.id.replace('.','') : feature.id; 
+        featureObjFromArr[featureId] = feature;
+       })
+       this.setState({featureObjFromArr});
    }
    componentDidMount(){ 
     this.processData(wholeMap)
@@ -182,24 +192,108 @@ class App extends Component {
                 ]            
             }     
         });    
-     })
-     
-     
-    //////////////////////////////////////////////////////////////////
-   
-    ///fetching starbucks locations for initial arc layer study. to be deleted
-    /* fetch('https://opendata.socrata.com/resource/txu4-fsic.json')
-    .then(data=>data.json())
-    .then(locations => {
-      const points = []
-       Object.keys(locations.map(location => {
-         points.push(
-           {from:this.state.startingPoint,to:[Number(location.longitude),Number(location.latitude)]}
-          )
-       }))
-       this.setState({points:points})
-    });*/
-   
+     })   
+   }
+  onChange=(e)=>{
+    this.setState({[e.target.name]:e.target.value})
+    
+  }
+
+  queryFeatures=(id)=>{
+    let i=0;
+    var featuresArr = [];
+    if(id!==''){
+        for(var key in this.state.featureObjFromArr){
+          if(key.includes(id)){
+            //console.log('yes')
+            featuresArr.push(this.state.featureObjFromArr[key])
+          }
+          i++;
+        }
+      }
+     function selectId(featureId){
+        this.setState({findSegId:featureId})
+      }
+    return featuresArr.map((feature,ind)=>{
+      return (
+        <div onClick={selectId.bind(this,feature.id)} key={ind} className="searchItemWrap">
+          <div className="searchItem">{feature.id}</div>
+        </div>
+      )
+    })
+    
+  }
+  findSegment=()=>{
+    let stringId = this.state.findSegId.toString();
+    var segId = stringId.indexOf('.') > 0 ? stringId.replace('.','') : stringId;
+    let feature = this.state.featureObjFromArr[segId];
+    this.state.currAndPrevForClick.push(feature);
+    /*let setStateAnd = new Promise((resolve,reject)=>{   
+      this.state.currAndPrevForClick.push(feature);
+      resolve();
+     })*/
+    if(feature===undefined){
+      return;
+    }
+    //setStateAnd.then(()=>{})
+    this.setState({selectedSeg:feature})
+       
+    if(feature.properties.connections){
+        var connections = feature.properties.connections;
+              
+        this.set_click_connection_color("clickConnections", segId, connections.continue, "light-blue");
+        this.set_click_connection_color("clickConnections", segId, connections.merge, "red");
+        this.set_click_connection_color("clickConnections", segId, connections.split, "yellow");
+        this.set_click_connection_color("clickConnections", segId, connections.right, "blue");
+        this.set_click_connection_color("clickConnections", segId, connections.left, "purple");
+    } 
+    this.map.setFeatureState({source: 'clickConnections', id: segId}, { selectedConnections: true,
+      color: 'green' })
+    if(this.state.currAndPrevForClick.length > 1){   
+                      
+         var currAndPrevForClick = this.state.currAndPrevForClick.slice(-2);                  
+         this.setState({ currAndPrevForClick: currAndPrevForClick });   
+       
+       
+          if(this.state.currAndPrevForClick[0].id !== this.state.currAndPrevForClick[1].id){
+            this.map.setFeatureState({source: 'clickConnections', id: this.state.currAndPrevForClick[0].id}, { selectedConnections: false,
+                                                                                                              color: 'green'           });        
+            if(this.state.currAndPrevForClick[0].properties.connections){
+                  let connectionsObj4 = typeof this.state.currAndPrevForClick[0].properties.connections=='string'
+                  ? JSON.parse(this.state.currAndPrevForClick[0].properties.connections)  
+                  : this.state.currAndPrevForClick[0].properties.connections;
+                  console.log(connectionsObj4)
+                  this.set_click_connection_color("clickConnections", null, connectionsObj4.continue, "light-blue", false);
+                  this.set_click_connection_color("clickConnections", null, connectionsObj4.merge, "red", false);
+                  this.set_click_connection_color("clickConnections", null, connectionsObj4.split, "yellow", false);
+                  this.set_click_connection_color("clickConnections", null, connectionsObj4.right, "blue", false);
+                  this.set_click_connection_color("clickConnections", null, connectionsObj4.left, "purple", false);
+              }   
+           }
+         
+     } 
+    
+      let promise = new Promise((resolve,reject)=>{
+          this.map.flyTo({center: feature.geometry.coordinates[feature.geometry.coordinates.length-1],
+                          zoom:15,
+                          curve: 1,
+                          speed:.8,
+                          easing(t) {
+                            return t;
+                          }})
+         //console.log(this.map.getSource('segments'))
+          this.pullOutOrInNav();
+          this.setState({findSegId:''})
+         
+          resolve()
+        })
+        promise.then(()=>{
+          
+            this.state.viewport.longitude = feature.geometry.coordinates[feature.geometry.coordinates.length-1][0];
+            this.state.viewport.latitude = feature.geometry.coordinates[feature.geometry.coordinates.length-1][1];
+            this.state.viewport.zoom = 15;
+            //this.map.setCenter = feature.geometry.coordinates[feature.geometry.coordinates.length-1];
+         })
   }
   handleGeoJSONUpload = (e) => {  
     
@@ -250,14 +344,16 @@ class App extends Component {
   }
   click = (info) => {
     let feature = this.map.queryRenderedFeatures([info.offsetCenter.x,info.offsetCenter.y], {layers:['clickConnections']});
-    if(feature.length==0){
+    if(feature.length===0){
     
           if(Object.keys(this.state.selectedSeg).length>0){ 
             //console.log(this.state.selectedSeg)
               this.map.setFeatureState({source: 'clickConnections', id: this.state.selectedSeg.id}, { selectedConnections: false,
                                                                                                       color: 'green'           });
               if(this.state.selectedSeg.properties.connections){
-                    let connectionsObj = JSON.parse(this.state.selectedSeg.properties.connections)  
+                    let connectionsObj = typeof this.state.selectedSeg.properties.connections=='string' 
+                    ? JSON.parse(this.state.selectedSeg.properties.connections)  
+                    : this.state.selectedSeg.properties.connections;
 
                     this.set_click_connection_color("clickConnections", null, connectionsObj.continue, "light-blue", false);
                     this.set_click_connection_color("clickConnections", null, connectionsObj.merge, "red", false);
@@ -281,7 +377,9 @@ class App extends Component {
                 this.map.setFeatureState({source: 'clickConnections', id: selectedSegId}, { selectedConnections: true,
                                                                                             color: 'green'           });
                 if(feature[0].properties.connections){
-                    var connections = JSON.parse(feature[0].properties.connections)
+                    var connections = typeof feature[0].properties.connections=='string'
+                    ? JSON.parse(feature[0].properties.connections)
+                    : feature[0].properties.connections;
                           
                     this.set_click_connection_color("clickConnections", selectedSegId, connections.continue, "light-blue");
                     this.set_click_connection_color("clickConnections", selectedSegId, connections.merge, "red");
@@ -299,7 +397,9 @@ class App extends Component {
             this.map.setFeatureState({source: 'clickConnections', id: this.state.currAndPrevForClick[0].id}, { selectedConnections: false,
                                                                                                                color: 'green'           });        
             if(this.state.currAndPrevForClick[0].properties.connections){
-                  let connectionsObj1 = JSON.parse(this.state.currAndPrevForClick[0].properties.connections)  
+                  let connectionsObj1 = typeof this.state.currAndPrevForClick[0].properties.connections=='string'
+                  ? JSON.parse(this.state.currAndPrevForClick[0].properties.connections)  
+                  :this.state.currAndPrevForClick[0].properties.connections
                   
                   this.set_click_connection_color("clickConnections", null, connectionsObj1.continue, "light-blue", false);
                   this.set_click_connection_color("clickConnections", null, connectionsObj1.merge, "red", false);
@@ -310,7 +410,10 @@ class App extends Component {
               this.map.setFeatureState({source: 'clickConnections', id: selectedSegId}, { selectedConnections: true,
                 color: 'green'           });
             if(this.state.selectedSeg.properties.connections){
-                  let connectionsObj1 = JSON.parse(this.state.currAndPrevForClick[1].properties.connections);
+                  let connectionsObj1 = typeof this.state.selectedSeg.properties.connections=='string' 
+                  ? JSON.parse(this.state.currAndPrevForClick[1].properties.connections)
+                  : this.state.selectedSeg.properties.connections; 
+
                   this.set_click_connection_color("clickConnections", selectedSegId, connectionsObj1.continue, "light-blue");
                   this.set_click_connection_color("clickConnections", selectedSegId, connectionsObj1.merge, "red");
                   this.set_click_connection_color("clickConnections", selectedSegId, connectionsObj1.split, "yellow");
@@ -360,7 +463,7 @@ class App extends Component {
                 }    
           }
           
-      if(feature.length==0){  
+      if(feature.length===0){  
         if(Object.keys(this.state.hoveredSeg).length>0){ 
           if(this.state.currAndPrev[0].properties.connections){
               var connectionsObj0 = JSON.parse(this.state.currAndPrev[0].properties.connections)  
@@ -405,7 +508,7 @@ class App extends Component {
               return connections.map((connect, i)=>{
                 let laneNum = connect.slice(-1)
                 let id = connect.slice(0,connect.length-1)
-                if(i==connections.length-1){              
+                if(i===connections.length-1){              
                   return id + '.' + laneNum
                  }
                  return id + '.' + laneNum + ', '
@@ -472,17 +575,30 @@ class App extends Component {
             //arcs={this.state.points} 
           segments={this.state.segments}/>*/}
      </ReactMapGL>
-     <i id="navBtn" onClick={this.pullOutOrInNav} className="fas fa-bars fa-bars-outside"></i>
-        <div id="controls">
-        <i  onClick={this.pullOutOrInNav} className="fas fa-bars"></i>
-        <div className="controlsTitleItem" >
-           <input onChange={this.handleGeoJSONUpload} accept='json' type="file" name="file-input" id="file-input"></input>
-           <label htmlFor="file-input">
-            <i className="fas fa-upload"></i>
-           </label>
-            Upload Your GeoJson
+     <i id="navBtn" onClick={this.pullOutOrInNav} className="fas fa-bars fa-bars-outside"></i>{/* icon that pulls nav out*/}
+        <div id="controls">{/*controls is the slide navbar*/}
+          <i  onClick={this.pullOutOrInNav} className="fas fa-bars"></i> {/*icon that pulls the nav back in*/}
+            <div className="controlsTitleItem" >
+               <input onChange={this.handleGeoJSONUpload} accept='json' type="file" name="file-input" id="file-input"></input>
+               <label htmlFor="file-input">
+               <i className="fas fa-upload"></i>
+               </label>
+                Upload Your GeoJson
+             </div>
+          {/*//////////////////////////////////////////////////////*/}
+         <div className="inputsWraps">
+            <div className="inputParent"> {/* for any input use this structure of inputParent class and controlsInputItem*/ }
+               <input value={this.state.findSegId} onChange={this.onChange} className="controlsInputItem" type="text" name="findSegId" placeholder="Find a segment"/>
+               <i onClick={this.findSegment} className="fas searchBtn fa-search-location"></i>
+            </div>
+         </div>
+         <div className="scrollBarHider">
+          <div className="searchList">
+              {this.queryFeatures(this.state.findSegId)}
+          </div>
          </div>
         </div>
+         {/*//////////////////////////////////////////////////////*/}
         <div className="toolTipWrap">
           {this.renderToolTip(this.state.hoveredSeg)}
           {this.renderToolTip(this.state.selectedSegToolTip)}
