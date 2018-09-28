@@ -71,9 +71,9 @@ class App extends Component {
       
      data.features.forEach((road,ind) => {  
        if(ind%2===0){
-        road.properties.color='#fca820'
+        road.properties.color='#e28809'
        } else {
-        road.properties.color='#ffd899'
+        road.properties.color='#633a00'
        }
         road.id = road.id.toString().indexOf('.') > 0 ? road.id.replace('.','') : road.id      
       // road.geometry.coordinates.map(coords=>{coords.reverse()})
@@ -221,9 +221,17 @@ class App extends Component {
         this.setState({findSegId:featureId})
       }
     return featuresArr.map((feature,ind)=>{
+      if(feature.properties.connections){
+        let laneNum = feature.id.slice(-1);   
+        let idNum = feature.id.slice(0,feature.id.length-1);
+        var id = idNum + '.' + laneNum
+      } else {
+        var id = feature.id;
+      }
+  
       return (
         <div onClick={selectId.bind(this,feature.id)} key={ind} className="searchItemWrap">
-          <div className="searchItem">{feature.id}</div>
+          <div className="searchItem">{id}</div>
         </div>
       )
     })
@@ -594,7 +602,7 @@ class App extends Component {
           segments={this.state.segments}/>*/}
      </ReactMapGL>
      <i id="navBtn" onClick={this.pullOutOrInNav} className="fas fa-bars fa-bars-outside"></i>{/* icon that pulls nav out*/}
-        <div id="controls">{/*controls is the slide navbar*/}
+        <div onClick={this.pullOutOrInNav} id="controls">{/*controls is the slide navbar*/}
           <i  onClick={this.pullOutOrInNav} className="fas fa-bars"></i> {/*icon that pulls the nav back in*/}
             <div className="controlsTitleItem" >
                <input onChange={this.handleGeoJSONUpload} accept='json' type="file" name="file-input" id="file-input"></input>
