@@ -98,8 +98,9 @@ class App extends Component {
        this.setState({featureObjFromArr});
    }
    componentDidMount(){ 
-    this.processData(wholeMap)
-              
+    this.processData(wholeMap);
+    window.addEventListener('resize', this._resize);
+    this._resize();          
     this.map = this.reactMap.getMap();
     this.map._interactive=true;
     this.map.on('load', () => {
@@ -194,6 +195,11 @@ class App extends Component {
         });    
      })   
    }
+
+  componentWillUnmount() {
+    window.removeEventListener('resize', this._resize);
+    
+  }
   onChange=(e)=>{
     this.setState({[e.target.name]:e.target.value})
     
@@ -227,15 +233,15 @@ class App extends Component {
     let stringId = this.state.findSegId.toString();
     var segId = stringId.indexOf('.') > 0 ? stringId.replace('.','') : stringId;
     let feature = this.state.featureObjFromArr[segId];
-    this.state.currAndPrevForClick.push(feature);
-    /*let setStateAnd = new Promise((resolve,reject)=>{   
+    //this.state.currAndPrevForClick.push(feature);
+    let setStateAnd = new Promise((resolve,reject)=>{   
       this.state.currAndPrevForClick.push(feature);
       resolve();
-     })*/
+     })
     if(feature===undefined){
       return;
     }
-    //setStateAnd.then(()=>{})
+    setStateAnd.then(()=>{
     this.setState({selectedSeg:feature})
        
     if(feature.properties.connections){
@@ -247,6 +253,7 @@ class App extends Component {
         this.set_click_connection_color("clickConnections", segId, connections.right, "blue");
         this.set_click_connection_color("clickConnections", segId, connections.left, "purple");
     } 
+  
     this.map.setFeatureState({source: 'clickConnections', id: segId}, { selectedConnections: true,
       color: 'green' })
     if(this.state.currAndPrevForClick.length > 1){   
@@ -272,27 +279,26 @@ class App extends Component {
            }
          
      } 
-    
+    })
       let promise = new Promise((resolve,reject)=>{
-          this.map.flyTo({center: feature.geometry.coordinates[feature.geometry.coordinates.length-1],
+         /* this.map.flyTo({center: feature.geometry.coordinates[feature.geometry.coordinates.length-1],
                           zoom:15,
                           curve: 1,
                           speed:.8,
                           easing(t) {
                             return t;
-                          }})
+                          }})*/
          //console.log(this.map.getSource('segments'))
           this.pullOutOrInNav();
           this.setState({findSegId:''})
-         
+          this.state.viewport.longitude = feature.geometry.coordinates[feature.geometry.coordinates.length-1][0];
+          this.state.viewport.latitude = feature.geometry.coordinates[feature.geometry.coordinates.length-1][1];
+          this.state.viewport.zoom = 15;         
           resolve()
         })
         promise.then(()=>{
-          
-            this.state.viewport.longitude = feature.geometry.coordinates[feature.geometry.coordinates.length-1][0];
-            this.state.viewport.latitude = feature.geometry.coordinates[feature.geometry.coordinates.length-1][1];
-            this.state.viewport.zoom = 15;
-            //this.map.setCenter = feature.geometry.coordinates[feature.geometry.coordinates.length-1];
+        
+           
          })
   }
   handleGeoJSONUpload = (e) => {  
@@ -314,10 +320,14 @@ class App extends Component {
           resolve();
         })
           changeGeoJson.then(()=>{
+            let panToPoints = this.state.i95Points.features[0].geometry.coordinates[0];
             this.map.getSource('segments').setData(this.state.i95Points)
             this.map.getSource('connectionSegs').setData(this.state.i95Points)
             this.map.getSource('clickConnections').setData(this.state.i95Points)
-            console.log( this.map.getSource('segments'))
+            this._onViewportChange({
+              longitude:panToPoints[0],
+              latitude:panToPoints[1]
+            });
            })
        })
    }
@@ -500,7 +510,15 @@ class App extends Component {
        });
     }
   
-
+    _resize=()=> {
+      //window.addEventListener("resize",()=>{
+        
+        this._onViewportChange({
+          width: window.innerWidth,
+          height: window.innerHeight
+        });
+      //})
+    }
     renderToolTip=(segment)=>{
         if(Object.keys(segment).length>0){
          //console.log(segment)
