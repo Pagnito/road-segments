@@ -62,8 +62,6 @@ class App extends Component {
           });   
       })
       this.socket.on('sendingPoint', (point) => {
-          console.log(point)
-          
           let promise = new Promise((resolve,reject)=>{
           let coords = this.state.egoPoints.features[0].geometry.coordinates;
           let withNewPoint = JSON.parse(JSON.stringify(this.state.egoPoints));
@@ -360,8 +358,14 @@ class App extends Component {
         
            
          })
+   }
+  
+  removeEgoLayer = () =>{
+    console.log(this.map.getSource('trace')._loaded)
+    this.map.removeLayer('trace');
+    this.map.removeSource('trace');
+    document.getElementById('file-input2').value = '';
   }
-
   handleEgoPoints = (e) => {
     let reader = new FileReader();
     reader.readAsText(e.target.files[0]);
@@ -373,13 +377,10 @@ class App extends Component {
       withFirstPoint.features[0].geometry.coordinates = [firstPoint]
     
       let promise = new Promise((resolve,reject)=>{
-        console.log(egoPoints);
         this.setState({egoPoints:withFirstPoint});
         if(Object.keys(this.state.egoPoints).length>0){
-          console.log('umm what')
           resolve();
-        }
-        
+        }      
       })
       
       promise.then(()=>{
@@ -391,6 +392,7 @@ class App extends Component {
 
 
   handleGeoJSONUpload = (e) => {  
+    //console.log(document.getElementById('file-input').value)
       const promise = new Promise ((resolve,reject)=>{
             let reader = new FileReader();
             reader.readAsText(e.target.files[0]);
@@ -416,6 +418,7 @@ class App extends Component {
               longitude:panToPoints[0],
               latitude:panToPoints[1]
             });
+            document.getElementById('file-input').value = '';
            })
        })
   }
@@ -710,6 +713,10 @@ class App extends Component {
               <i className="fas fa-car"></i>
               </label>
                Animate Ego
+        </div>
+        <div className="controlsTitleItem" >
+            <i onClick={this.removeEgoLayer} className="fas fa-recycle"></i>
+               Clear Ego
         </div>
         </div>
          {/*//////////////////////////////////////////////////////*/}
