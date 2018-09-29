@@ -1,6 +1,12 @@
 {
   "name": "arc",
   "version": "0.1.0",
+  "proxy": {
+    "/socket.io": {
+      "target": "http://localhost:4000",
+      "ws": true
+    }
+  },
   "private": true,
   "dependencies": {
     "d3": "^5.7.0",
@@ -11,7 +17,8 @@
     "react": "^16.4.2",
     "react-dom": "^16.4.2",
     "react-map-gl": "^3.3.4",
-    "react-scripts": "1.1.5"
+    "react-scripts": "1.1.5",
+    "socket.io-client": "^2.1.1"
   },
   "scripts": {
     "start": "react-scripts start",

@@ -107,6 +107,7 @@
     color:white;
     font-family: 'quicksand';
     margin: 20px;
+    margin-bottom: 0px;
     background-color: transparent;
     border: none;
     border-bottom: 2px solid white;
@@ -128,14 +129,15 @@
 }
 .searchList {
     margin-top:20px;
-    max-height:60vh;
+    max-height:50vh;
     overflow-y:scroll;
     width:110%;
-    min-height: 70vh;
+    min-height: 10px;
+    margin-bottom:20px;
 }
 .scrollBarHider {
     width:100%;
-    min-height:70vh;
+    min-height:10px;
 }
 .searchBtn {
     color:#FEA62F;
@@ -173,22 +175,34 @@
 .controlsTitleItem{
     color:white;
     font-family: 'quicksand';
-    margin: 20px;
-   
+    margin-top: 30px;
+    margin-left:20px;
 }
 .controlsTitleItem > input {
     display: none;
 }
-.fa-upload {
-    color:white;
+.fa-car{
+    color:#FEA62F;
     font-size: 20px;
     margin-right:10px;
     margin-left:10px;
     transition: all .3s ease-out;
     cursor: pointer;
 }
-.fa-upload:hover {
+.fa-upload {
     color:#FEA62F;
+    font-size: 20px;
+    margin-right:10px;
+    margin-left:10px;
+    transition: all .3s ease-out;
+    cursor: pointer;
+}
+.fa-car:hover {
+    color:#d6530c;
+    transform: scale(1.3);
+}
+.fa-upload:hover {
+    color:#d6530c;
     transform: scale(1.3);
 }
 @media (max-width:1000px){

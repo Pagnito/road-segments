@@ -2,6 +2,7 @@
 import React, {Component} from 'react';
 import ReactMapGL from 'react-map-gl';
 import ArcLayer from './components/arcLayer';
+import io from 'socket.io-client';
 //import roads from './assets/pruned_extra_roads.json';
 //import testerRoads from './assets/tester.json';
 import wholeMap from './assets/i95_points.json';
@@ -22,6 +23,7 @@ class App extends Component {
       currAndPrevForClick:[],
       startingPoint: [-71.063,42.558],
       featureObjFromArr:{},
+      egoPoints: {},
       viewport: {
         width: window.innerWidth,
         height: window.innerHeight,
@@ -34,6 +36,55 @@ class App extends Component {
         bearing: 50,     
       }     
     }
+    this.socket = io.connect('http://localhost:3000/');
+    this.socket.on('connect', ()=>{
+      this.socket.on('pretendData', (data)=>{
+        console.log(data)
+      })
+      this.socket.on('firstPoint', (firstPoint)=>{
+        this._onViewportChange({
+          longitude: firstPoint[0],
+          latitude: firstPoint[1],
+          zoom:15
+        })
+            this.map.addLayer({
+              "id": "trace",
+              "type": "line",
+              "source": { 
+                "type": 'geojson',
+                "data": this.state.egoPoints
+                },
+              "paint": {
+                  "line-color": "red",
+                  "line-opacity": 0.75,
+                  "line-width": 5
+              }
+          });   
+      })
+      this.socket.on('sendingPoint', (point) => {
+          console.log(point)
+          
+          let promise = new Promise((resolve,reject)=>{
+          let coords = this.state.egoPoints.features[0].geometry.coordinates;
+          let withNewPoint = JSON.parse(JSON.stringify(this.state.egoPoints));
+          coords.push(point);
+          withNewPoint.features[0].geometry.coordinates = coords;
+          this.setState({egoPoints:withNewPoint})
+          
+          resolve();
+          });
+          promise.then(()=>{
+            this.map.getSource('trace').setData(this.state.egoPoints);
+            this._onViewportChange({
+              longitude: point[0],
+              latitude: point[1],
+              
+            })
+          })
+          
+      })
+    })
+    
   }
 
 
@@ -192,13 +243,14 @@ class App extends Component {
                 'rgba(244, 232, 66, 0.0)'
                 ]            
             }     
-        });    
+        });
+         
      })   
    }
 
   componentWillUnmount() {
     window.removeEventListener('resize', this._resize);
-    
+    this.socket.disconnect();
   }
   onChange=(e)=>{
     this.setState({[e.target.name]:e.target.value})
@@ -309,8 +361,36 @@ class App extends Component {
            
          })
   }
-  handleGeoJSONUpload = (e) => {  
+
+  handleEgoPoints = (e) => {
+    let reader = new FileReader();
+    reader.readAsText(e.target.files[0]);
+    reader.onload = () => {     
+      const egoPoints = JSON.parse(reader.result);
     
+      let firstPoint = egoPoints.features[0].geometry.coordinates[0];
+      let withFirstPoint = JSON.parse(JSON.stringify(egoPoints));
+      withFirstPoint.features[0].geometry.coordinates = [firstPoint]
+    
+      let promise = new Promise((resolve,reject)=>{
+        console.log(egoPoints);
+        this.setState({egoPoints:withFirstPoint});
+        if(Object.keys(this.state.egoPoints).length>0){
+          console.log('umm what')
+          resolve();
+        }
+        
+      })
+      
+      promise.then(()=>{
+        this.socket.emit('egoPoints', egoPoints.features[0].geometry.coordinates);
+      })
+      
+    }
+  }
+
+
+  handleGeoJSONUpload = (e) => {  
       const promise = new Promise ((resolve,reject)=>{
             let reader = new FileReader();
             reader.readAsText(e.target.files[0]);
@@ -322,7 +402,7 @@ class App extends Component {
         })
       promise.then((geoJson)=>{
         let changeGeoJson = new Promise((resolve,reject)=>{
-          console.log(geoJson);
+          //console.log(geoJson);
           this.processData(geoJson);
           this.setState({i95Points:geoJson});
           resolve();
@@ -338,7 +418,7 @@ class App extends Component {
             });
            })
        })
-   }
+  }
 
     set_connection_color(layer, hover_id, cons, color, enable=true){
         if(cons !== undefined){
@@ -602,15 +682,9 @@ class App extends Component {
           segments={this.state.segments}/>*/}
      </ReactMapGL>
      <i id="navBtn" onClick={this.pullOutOrInNav} className="fas fa-bars fa-bars-outside"></i>{/* icon that pulls nav out*/}
-        <div onClick={this.pullOutOrInNav} id="controls">{/*controls is the slide navbar*/}
+        <div id="controls">{/*controls is the slide navbar*/}
           <i  onClick={this.pullOutOrInNav} className="fas fa-bars"></i> {/*icon that pulls the nav back in*/}
-            <div className="controlsTitleItem" >
-               <input onChange={this.handleGeoJSONUpload} accept='json' type="file" name="file-input" id="file-input"></input>
-               <label htmlFor="file-input">
-               <i className="fas fa-upload"></i>
-               </label>
-                Upload Your GeoJson
-             </div>
+          
           {/*//////////////////////////////////////////////////////*/}
          <div className="inputsWraps">
             <div className="inputParent"> {/* for any input use this structure of inputParent class and controlsInputItem*/ }
@@ -619,10 +693,24 @@ class App extends Component {
             </div>
          </div>
          <div className="scrollBarHider">
-          <div className="searchList">
-              {this.queryFeatures(this.state.findSegId)}
-          </div>
+            <div className="searchList">
+                {this.queryFeatures(this.state.findSegId)}
+            </div>
          </div>
+         <div className="controlsTitleItem" >
+               <input onChange={this.handleGeoJSONUpload} accept='json' type="file" name="file-input" id="file-input"></input>
+               <label htmlFor="file-input">
+               <i className="fas fa-upload"></i>
+               </label>
+                Upload Your GeoJson
+        </div>
+        <div className="controlsTitleItem" >
+              <input onChange={this.handleEgoPoints} accept='json' type="file" name="file-input2" id="file-input2"></input>
+               <label htmlFor="file-input2">
+              <i className="fas fa-car"></i>
+              </label>
+               Animate Ego
+        </div>
         </div>
          {/*//////////////////////////////////////////////////////*/}
         <div className="toolTipWrap">
