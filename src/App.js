@@ -1,6 +1,7 @@
 /* global fetch */
 import React, {Component} from 'react';
 import ReactMapGL from 'react-map-gl';
+import mapboxgl from 'mapbox-gl';
 import ArcLayer from './components/arcLayer';
 import io from 'socket.io-client';
 //import roads from './assets/pruned_extra_roads.json';
@@ -13,6 +14,9 @@ class App extends Component {
   constructor(props){
     super(props)
     this.state={
+      localMapConnects:[],
+      flipped: false,
+      flippedText: 'Show Local Map',
       findSegId:'',
       navVisible:false,
       connections:[],
@@ -36,6 +40,10 @@ class App extends Component {
         bearing: 50,     
       }     
     }
+    ////below vars are not in state because its not async this way
+    this.socketIdsArr = [];
+    this.egoCounter = 0;
+    this.car = {};
     this.socket = io.connect('http://localhost:3000/');
     this.socket.on('connect', ()=>{
       this.socket.on('pretendData', (data)=>{
@@ -51,40 +59,109 @@ class App extends Component {
               "id": "trace",
               "type": "line",
               "source": { 
+                "lineMetrics": true,
                 "type": 'geojson',
                 "data": this.state.egoPoints
                 },
               "paint": {
                   "line-color": "red",
-                  "line-opacity": 0.75,
-                  "line-width": 5
+                  'line-gradient': [
+                      'interpolate',
+                      ['linear'],
+                      ['line-progress'],
+                      0, "blue",
+                      0.1, "royalblue",
+                      0.3, "cyan",
+                      0.5, "lime",
+                      0.7, "yellow",
+                      1, "red"
+                  ],
+                  //"line-opacity": 0.75,
+                  "line-width": 4
               }
-          });   
-      })
+          });  
+          this.carIcon = document.createElement('div');
+          this.carIcon.classList.add('carIcon');
+         
+           //carIcon.style.backgroundImage = 'url(/assets/car-icon-deckgl.png)';
+           this.carIcon.style.className = 'carIcon';
+           this.carIcon.style.backgroundSize = "cover";
+
+        this.car = new mapboxgl.Marker(this.carIcon)
+        .setLngLat(firstPoint)
+        .addTo(this.map);
+        
+         
+       })
       this.socket.on('sendingPoint', (point) => {
+        this.egoCounter+=1;
+        this.socketIdsArr.push(point[0].id);
+          if(this.egoCounter==1){
+            if(point[0].properties.connections){
+              let connections = point[0].properties.connections;
+
+              this.set_click_connection_color("clickConnections", point[0].id, connections.continue, "light-blue");
+              this.set_click_connection_color("clickConnections", point[0].id, connections.merge, "red");
+              this.set_click_connection_color("clickConnections", point[0].id, connections.split, "yellow");
+              this.set_click_connection_color("clickConnections", point[0].id, connections.right, "blue");
+              this.set_click_connection_color("clickConnections", point[0].id, connections.left, "purple");
+              this.map.setFeatureState({source: 'clickConnections', id: point[0].id}, { selectedConnections: true,
+                                                                                        color: 'green' })
+            } 
+          }
+        if(this.egoCounter>1){
+          if(point[0].id!==point[1].id){
+            if(point[1]){
+              if(point[1].properties.connections){
+                let prevConnections = point[1].properties.connections;
+               this.set_click_connection_color("clickConnections", null, prevConnections.continue, "light-blue", false);
+               this.set_click_connection_color("clickConnections", null, prevConnections.merge, "red", false);
+               this.set_click_connection_color("clickConnections", null, prevConnections.split, "yellow", false);
+               this.set_click_connection_color("clickConnections", null, prevConnections.right, "blue", false);
+               this.set_click_connection_color("clickConnections", null, prevConnections.left, "purple", false);
+               this.map.setFeatureState({source: 'clickConnections', id: point[1].id}, { selectedConnections: false,
+                color: 'green' })
+              }
+            }
+              if(point[0].properties.connections){
+                let connections = point[0].properties.connections;
+                
+                this.set_click_connection_color("clickConnections", point[0].id, connections.continue, "light-blue");
+                this.set_click_connection_color("clickConnections", point[0].id, connections.merge, "red");
+                this.set_click_connection_color("clickConnections", point[0].id, connections.split, "yellow");
+                this.set_click_connection_color("clickConnections", point[0].id, connections.right, "blue");
+                this.set_click_connection_color("clickConnections", point[0].id, connections.left, "purple");
+                this.map.setFeatureState({source: 'clickConnections', id: point[0].id}, { selectedConnections: true,
+                  color: 'green' })
+               } 
+               
+            }
+         }   
+          this.car.setLngLat(point[0].geometry.coordinates[0]);
+
           let promise = new Promise((resolve,reject)=>{
           let coords = this.state.egoPoints.features[0].geometry.coordinates;
           let withNewPoint = JSON.parse(JSON.stringify(this.state.egoPoints));
-          coords.push(point);
+          coords.push(point[0].geometry.coordinates[0]);
           withNewPoint.features[0].geometry.coordinates = coords;
-          this.setState({egoPoints:withNewPoint})
-          
+          this.setState({egoPoints:withNewPoint});         
           resolve();
           });
           promise.then(()=>{
             this.map.getSource('trace').setData(this.state.egoPoints);
             this._onViewportChange({
-              longitude: point[0],
-              latitude: point[1],
+              longitude: point[0].geometry.coordinates[0][0],
+              latitude: point[0].geometry.coordinates[0][1],
               
             })
+            
           })
           
       })
     })
     
   }
-
+/////end of constructor////////////
 
   pullOutOrInNav=()=>{
     var navBtn = document.getElementById('navBtn');
@@ -101,7 +178,24 @@ class App extends Component {
     }
   }
   processData = (data) => { 
-      
+    ///create segment div points///dots between segments on map////
+      const segmentDivPoints = data.features.map((feature,ind) =>{
+        return {
+          "type": "Feature",
+           "geometry": {
+              "type": "Point",
+              "coordinates": feature.geometry.coordinates[0]
+             }
+         } 
+      });
+      const segmentDivPointsObj = {
+        "type": "FeatureCollection",
+        "features": segmentDivPoints
+      }
+ 
+      this.setState({segmentDivPoints: segmentDivPointsObj});
+
+      ///////////////change connections id floats to whole numbers for mapbox to work////////
       if(data.connections){
         for(var key in data.connections){
             for(var id in data.connections[key]){
@@ -138,11 +232,12 @@ class App extends Component {
       })
       //console.log(data.features)
       this.setState({i95Points:data.features});
-
+      /////create a copy of features within in an object with ids as keys for quick queries/////
       let featureObjFromArr = {};
       data.features.map(feature => {
         let featureId = feature.id.toString().indexOf('.') > 0 ? feature.id.replace('.','') : feature.id; 
         featureObjFromArr[featureId] = feature;
+        return feature;
        })
        this.setState({featureObjFromArr});
    }
@@ -153,6 +248,7 @@ class App extends Component {
     this.map = this.reactMap.getMap();
     this.map._interactive=true;
     this.map.on('load', () => {
+      
        //console.log(this.state.data)  
           this.map.addLayer({
                 "id": "segments",
@@ -166,8 +262,8 @@ class App extends Component {
                         
                 },
                 "layout": {
-                    "line-join": "round",
-                    "line-cap": "round"
+                    "line-join": "miter",
+                    "line-cap": "butt"
                 },
                 "paint": {
                     //"line-color": ['get','color'],
@@ -192,7 +288,7 @@ class App extends Component {
             },
             "layout": {
                 "line-join": "round",
-                "line-cap": "round"
+                "line-cap": "butt"
             },
             "paint": {
                 //"line-color": '#1dc6ad',
@@ -224,7 +320,7 @@ class App extends Component {
             },
             "layout": {
                 "line-join": "round",
-                "line-cap": "round"
+                "line-cap": "butt"
             },
             "paint": {
                 //"line-color": '#1dc6ad',
@@ -242,10 +338,24 @@ class App extends Component {
                 ]            
             }     
         });
-         
+        this.map.addLayer({
+          "id": "segmentDivPoints",
+          "source": {
+            "type": "geojson",
+            "data": this.state.segmentDivPoints
+           },
+          "type": "circle",
+          "paint": {
+              "circle-radius": {
+                'base': 1.75,
+                'stops': [[12, 2], [22, 30]]
+            },
+              "circle-color": "black"
+              }
+      });
      })   
    }
-
+    
   componentWillUnmount() {
     window.removeEventListener('resize', this._resize);
     this.socket.disconnect();
@@ -300,44 +410,40 @@ class App extends Component {
       return;
     }
     setStateAnd.then(()=>{
-    this.setState({selectedSeg:feature})
-       
-    if(feature.properties.connections){
-        var connections = feature.properties.connections;
+      this.setState({selectedSeg:feature});
+        
+      if(feature.properties.connections){
+          var connections = feature.properties.connections;
+                
+          this.set_click_connection_color("clickConnections", segId, connections.continue, "light-blue");
+          this.set_click_connection_color("clickConnections", segId, connections.merge, "red");
+          this.set_click_connection_color("clickConnections", segId, connections.split, "yellow");
+          this.set_click_connection_color("clickConnections", segId, connections.right, "blue");
+          this.set_click_connection_color("clickConnections", segId, connections.left, "purple");
+       } 
+          this.map.setFeatureState({source: 'clickConnections', id: segId}, { selectedConnections: true,
+                                                                              color: 'green' })
+      if(this.state.currAndPrevForClick.length > 1){                      
+          var currAndPrevForClick = this.state.currAndPrevForClick.slice(-2);                  
+          this.setState({ currAndPrevForClick: currAndPrevForClick });   
               
-        this.set_click_connection_color("clickConnections", segId, connections.continue, "light-blue");
-        this.set_click_connection_color("clickConnections", segId, connections.merge, "red");
-        this.set_click_connection_color("clickConnections", segId, connections.split, "yellow");
-        this.set_click_connection_color("clickConnections", segId, connections.right, "blue");
-        this.set_click_connection_color("clickConnections", segId, connections.left, "purple");
-    } 
-  
-    this.map.setFeatureState({source: 'clickConnections', id: segId}, { selectedConnections: true,
-      color: 'green' })
-    if(this.state.currAndPrevForClick.length > 1){   
-                      
-         var currAndPrevForClick = this.state.currAndPrevForClick.slice(-2);                  
-         this.setState({ currAndPrevForClick: currAndPrevForClick });   
-       
-       
-          if(this.state.currAndPrevForClick[0].id !== this.state.currAndPrevForClick[1].id){
-            this.map.setFeatureState({source: 'clickConnections', id: this.state.currAndPrevForClick[0].id}, { selectedConnections: false,
-                                                                                                              color: 'green'           });        
-            if(this.state.currAndPrevForClick[0].properties.connections){
-                  let connectionsObj4 = typeof this.state.currAndPrevForClick[0].properties.connections=='string'
-                  ? JSON.parse(this.state.currAndPrevForClick[0].properties.connections)  
-                  : this.state.currAndPrevForClick[0].properties.connections;
-                  console.log(connectionsObj4)
-                  this.set_click_connection_color("clickConnections", null, connectionsObj4.continue, "light-blue", false);
-                  this.set_click_connection_color("clickConnections", null, connectionsObj4.merge, "red", false);
-                  this.set_click_connection_color("clickConnections", null, connectionsObj4.split, "yellow", false);
-                  this.set_click_connection_color("clickConnections", null, connectionsObj4.right, "blue", false);
-                  this.set_click_connection_color("clickConnections", null, connectionsObj4.left, "purple", false);
-              }   
-           }
-         
-     } 
-    })
+            if(this.state.currAndPrevForClick[0].id !== this.state.currAndPrevForClick[1].id){
+              this.map.setFeatureState({source: 'clickConnections', id: this.state.currAndPrevForClick[0].id}, { selectedConnections: false,
+                                                                                                                color: 'green'           });        
+              if(this.state.currAndPrevForClick[0].properties.connections){
+                    let connectionsObj4 = typeof this.state.currAndPrevForClick[0].properties.connections==='string'
+                    ? JSON.parse(this.state.currAndPrevForClick[0].properties.connections)  
+                    : this.state.currAndPrevForClick[0].properties.connections;
+                    console.log(connectionsObj4)
+                    this.set_click_connection_color("clickConnections", null, connectionsObj4.continue, "light-blue", false);
+                    this.set_click_connection_color("clickConnections", null, connectionsObj4.merge, "red", false);
+                    this.set_click_connection_color("clickConnections", null, connectionsObj4.split, "yellow", false);
+                    this.set_click_connection_color("clickConnections", null, connectionsObj4.right, "blue", false);
+                    this.set_click_connection_color("clickConnections", null, connectionsObj4.left, "purple", false);
+                }   
+            }         
+        } 
+     })
       let promise = new Promise((resolve,reject)=>{
          /* this.map.flyTo({center: feature.geometry.coordinates[feature.geometry.coordinates.length-1],
                           zoom:15,
@@ -355,73 +461,90 @@ class App extends Component {
           resolve()
         })
         promise.then(()=>{
-        
+        ////kept this just in case i wanna change something////
            
          })
    }
   
   removeEgoLayer = () =>{
-    console.log(this.map.getSource('trace')._loaded)
-    this.map.removeLayer('trace');
-    this.map.removeSource('trace');
-    document.getElementById('file-input2').value = '';
-  }
+      this.car.remove();
+      document.getElementById('localMapBtn').style.pointerEvents = 'none';
+      document.getElementById('localMapBtn').style.color = 'gray';
+      this.map.removeLayer('trace');
+      this.map.removeSource('trace');
+      document.getElementById('file-input2').value = '';  
+      if(this.socketIdsArr){
+        let lastConnections = this.state.featureObjFromArr[this.socketIdsArr[this.socketIdsArr.length-1]].properties.connections;
+        this.set_click_connection_color("clickConnections", null, lastConnections.continue, "light-blue", false);
+        this.set_click_connection_color("clickConnections", null, lastConnections.merge, "red", false);
+        this.set_click_connection_color("clickConnections", null, lastConnections.split, "yellow", false);
+        this.set_click_connection_color("clickConnections", null, lastConnections.right, "blue", false);
+        this.set_click_connection_color("clickConnections", null, lastConnections.left, "purple", false);
+        this.map.setFeatureState({source: 'clickConnections', id: this.socketIdsArr[this.socketIdsArr.length-1].id}, { selectedConnections: false,
+                                                                                                                       color: 'green'           });        
+      }
+      this.socketIdsArr = [];
+      this.egoCounter = 0;
+   }
   handleEgoPoints = (e) => {
-    let reader = new FileReader();
-    reader.readAsText(e.target.files[0]);
-    reader.onload = () => {     
-      const egoPoints = JSON.parse(reader.result);
-    
-      let firstPoint = egoPoints.features[0].geometry.coordinates[0];
-      let withFirstPoint = JSON.parse(JSON.stringify(egoPoints));
-      withFirstPoint.features[0].geometry.coordinates = [firstPoint]
-    
-      let promise = new Promise((resolve,reject)=>{
-        this.setState({egoPoints:withFirstPoint});
-        if(Object.keys(this.state.egoPoints).length>0){
-          resolve();
-        }      
-      })
-      
-      promise.then(()=>{
-        this.socket.emit('egoPoints', egoPoints.features[0].geometry.coordinates);
-      })
-      
-    }
-  }
+      document.getElementById('localMapBtn').style.pointerEvents = 'auto';
+      document.getElementById('localMapBtn').style.color = 'white';
+      let reader = new FileReader();
+      reader.readAsText(e.target.files[0]);
+      reader.onload = () => {     
+          const egoPoints = JSON.parse(reader.result);
+        
+          let firstPoint = egoPoints.features[0].geometry.coordinates[0];
+          let withFirstPoint = JSON.parse(JSON.stringify(egoPoints));
+          withFirstPoint.features = [withFirstPoint.features[0]];
+          withFirstPoint.features[0].geometry.coordinates = [firstPoint];
+          //console.log(withFirstPoint, firstPoint, egoPoints)
+          let promise = new Promise((resolve,reject)=>{
+            this.setState({egoPoints:withFirstPoint});
+            if(Object.keys(this.state.egoPoints).length>0){ 
+              resolve();
+             }      
+           })
+          
+          promise.then(()=>{
+            this.socket.emit('egoPoints', egoPoints.features);
+          })      
+       }
+   }
 
 
   handleGeoJSONUpload = (e) => {  
     //console.log(document.getElementById('file-input').value)
-      const promise = new Promise ((resolve,reject)=>{
+      const promise = new Promise ((resolve,reject)=>{ 
             let reader = new FileReader();
             reader.readAsText(e.target.files[0]);
             reader.onload = () => {                
                 let geoJson = JSON.parse(reader.result);
               // console.log(JSON.parse(reader.result))            
                 resolve(geoJson)              
-            }
+             }
         })
       promise.then((geoJson)=>{
         let changeGeoJson = new Promise((resolve,reject)=>{
-          //console.log(geoJson);
-          this.processData(geoJson);
-          this.setState({i95Points:geoJson});
-          resolve();
-        })
+            //console.log(geoJson);
+            this.processData(geoJson);
+            this.setState({i95Points:geoJson});
+            resolve();
+         })
           changeGeoJson.then(()=>{
-            let panToPoints = this.state.i95Points.features[0].geometry.coordinates[0];
-            this.map.getSource('segments').setData(this.state.i95Points)
-            this.map.getSource('connectionSegs').setData(this.state.i95Points)
-            this.map.getSource('clickConnections').setData(this.state.i95Points)
-            this._onViewportChange({
-              longitude:panToPoints[0],
-              latitude:panToPoints[1]
-            });
-            document.getElementById('file-input').value = '';
-           })
+              let panToPoints = this.state.i95Points.features[0].geometry.coordinates[0];
+              this.map.getSource('segments').setData(this.state.i95Points)
+              this.map.getSource('connectionSegs').setData(this.state.i95Points)
+              this.map.getSource('clickConnections').setData(this.state.i95Points)
+              this.map.getSource('segmentDivPoints').setData(this.state.segmentDivPoints)
+              this._onViewportChange({
+                longitude:panToPoints[0],
+                latitude:panToPoints[1]
+               });
+              document.getElementById('file-input').value = '';
+            })
        })
-  }
+   }
 
     set_connection_color(layer, hover_id, cons, color, enable=true){
         if(cons !== undefined){
@@ -432,17 +555,19 @@ class App extends Component {
                 }
             });
         }
-    }
+     }
     set_click_connection_color(layer, hover_id, cons, color, enable=true){
-      if(cons !== undefined){
-          cons.forEach(con_id => {
-              if(hover_id === null || Number(con_id) !== hover_id){
-                  this.map.setFeatureState({source: layer, id: con_id},
-                                           {selectedConnections: enable, color: color});
+        if(cons !== undefined){
+            cons.forEach(con_id => {
+              if(con_id==hover_id){              
               }
-          });
-      }
-  }
+                if(hover_id === null || Number(con_id) !== hover_id){
+                    this.map.setFeatureState({source: layer, id: con_id},
+                                            {selectedConnections: enable, color: color});
+                }
+            });
+        }
+     }
   click = (info) => {
     let feature = this.map.queryRenderedFeatures([info.offsetCenter.x,info.offsetCenter.y], {layers:['clickConnections']});
     if(feature.length===0){
@@ -528,11 +653,55 @@ class App extends Component {
    /////////////////////////////////////////////
   hover=(info)=>{  
     var feature = this.map.queryRenderedFeatures([info.offsetCenter.x,info.offsetCenter.y],{layers:['segments']});
+    if(feature.length===0){  
+      if(Object.keys(this.state.hoveredSeg).length>0){ 
+        if(this.state.currAndPrev[0].properties.connections){
+            var connectionsObj0 = JSON.parse(this.state.currAndPrev[0].properties.connections)  
+
+            this.set_connection_color("connectionSegs", null, connectionsObj0.continue, "light-blue", false);
+            this.set_connection_color("connectionSegs", null, connectionsObj0.merge, "red", false);
+            this.set_connection_color("connectionSegs", null, connectionsObj0.split, "yellow", false);
+            this.set_connection_color("connectionSegs", null, connectionsObj0.right, "blue", false);
+            this.set_connection_color("connectionSegs", null, connectionsObj0.left, "purple", false);
+         }
+          if(this.state.currAndPrev[1]){
+            this.map.setFeatureState({source: 'segments', id: this.state.currAndPrev[0].id}, { hover: false});             
+            if(this.state.currAndPrev[1].properties.connections){
+                  var connectionsObj = JSON.parse(this.state.currAndPrev[1].properties.connections)  
+
+                  this.set_connection_color("connectionSegs", null, connectionsObj.continue, "light-blue", false);
+                  this.set_connection_color("connectionSegs", null, connectionsObj.merge, "red", false);
+                  this.set_connection_color("connectionSegs", null, connectionsObj.split, "yellow", false);
+                  this.set_connection_color("connectionSegs", null, connectionsObj.right, "blue", false);
+                  this.set_connection_color("connectionSegs", null, connectionsObj.left, "purple", false);
+              }
+            }       
+        this.map.setFeatureState({source: 'segments', id: this.state.hoveredSeg.id}, { hover: false});
+        this.setState({hoveredSeg:{}})
+       }         
+     }
     //console.log(feature[0])
       if(feature.length>0){
           var hoveredSegId = feature[0].id;       
           this.state.currAndPrev.push(feature[0]);
           this.setState({hoveredSeg:feature[0]});
+          if(this.state.currAndPrev.length > 2){                       
+            var currAndPrev = this.state.currAndPrev.slice(-2);                  
+            this.setState({ currAndPrev: currAndPrev });    
+                            
+            if(this.state.currAndPrev[0].id !== this.state.currAndPrev[1].id){
+              this.map.setFeatureState({source: 'segments', id: this.state.currAndPrev[0].id}, { hover: false});
+               if(this.state.currAndPrev[0].properties.connections){
+                     let connectionsObj1 = JSON.parse(this.state.currAndPrev[0].properties.connections)  
+                     
+                     this.set_connection_color("connectionSegs", null, connectionsObj1.continue, "light-blue", false);
+                     this.set_connection_color("connectionSegs", null, connectionsObj1.merge, "red", false);
+                     this.set_connection_color("connectionSegs", null, connectionsObj1.split, "yellow", false);
+                     this.set_connection_color("connectionSegs", null, connectionsObj1.right, "blue", false);
+                     this.set_connection_color("connectionSegs", null, connectionsObj1.left, "purple", false);
+                 }
+               }
+           }  
             if (hoveredSegId) {          
                 this.map.setFeatureState({source: 'segments', id: hoveredSegId}, { hover: true});
                 if(feature[0].properties.connections){
@@ -545,55 +714,38 @@ class App extends Component {
                     this.set_connection_color("connectionSegs", hoveredSegId, connections.left, "purple");
                  } 
               } 
-            if(this.state.currAndPrev.length > 2){                       
-                 var currAndPrev = this.state.currAndPrev.slice(-2);                  
-                 this.setState({ currAndPrev: currAndPrev });    
-                                 
-                 if(this.state.currAndPrev[0].id !== this.state.currAndPrev[1].id){
-                   this.map.setFeatureState({source: 'segments', id: this.state.currAndPrev[0].id}, { hover: false});
-                    if(this.state.currAndPrev[0].properties.connections){
-                          let connectionsObj1 = JSON.parse(this.state.currAndPrev[0].properties.connections)  
-                          
-                          this.set_connection_color("connectionSegs", null, connectionsObj1.continue, "light-blue", false);
-                          this.set_connection_color("connectionSegs", null, connectionsObj1.merge, "red", false);
-                          this.set_connection_color("connectionSegs", null, connectionsObj1.split, "yellow", false);
-                          this.set_connection_color("connectionSegs", null, connectionsObj1.right, "blue", false);
-                          this.set_connection_color("connectionSegs", null, connectionsObj1.left, "purple", false);
-                      }
-                    }
-                }    
+              
           }
           
-      if(feature.length===0){  
-        if(Object.keys(this.state.hoveredSeg).length>0){ 
-          if(this.state.currAndPrev[0].properties.connections){
-              var connectionsObj0 = JSON.parse(this.state.currAndPrev[0].properties.connections)  
-
-              this.set_connection_color("connectionSegs", null, connectionsObj0.continue, "light-blue", false);
-              this.set_connection_color("connectionSegs", null, connectionsObj0.merge, "red", false);
-              this.set_connection_color("connectionSegs", null, connectionsObj0.split, "yellow", false);
-              this.set_connection_color("connectionSegs", null, connectionsObj0.right, "blue", false);
-              this.set_connection_color("connectionSegs", null, connectionsObj0.left, "purple", false);
-           }
-            if(this.state.currAndPrev[1]){
-              this.map.setFeatureState({source: 'segments', id: this.state.currAndPrev[0].id}, { hover: false});             
-              if(this.state.currAndPrev[1].properties.connections){
-                    var connectionsObj = JSON.parse(this.state.currAndPrev[1].properties.connections)  
-
-                    this.set_connection_color("connectionSegs", null, connectionsObj.continue, "light-blue", false);
-                    this.set_connection_color("connectionSegs", null, connectionsObj.merge, "red", false);
-                    this.set_connection_color("connectionSegs", null, connectionsObj.split, "yellow", false);
-                    this.set_connection_color("connectionSegs", null, connectionsObj.right, "blue", false);
-                    this.set_connection_color("connectionSegs", null, connectionsObj.left, "purple", false);
-                }
-              }       
-          this.map.setFeatureState({source: 'segments', id: this.state.hoveredSeg.id}, { hover: false});
-          this.setState({hoveredSeg:{}})
-         }         
-       }
+      
    }
 
-
+   ///////////////////////////////////////////
+   flipLocalMapBtn = () => {  
+    let btn = document.querySelector('.localMapBtn');
+     if(this.state.flipped ===false){
+      this.map.setLayoutProperty('segments', 'visibility', 'none');
+      this.map.setLayoutProperty('connectionSegs', 'visibility', 'none');
+      this.map.setLayoutProperty('segmentDivPoints', 'visibility', 'none');
+     
+       btn.classList.remove('flipBack');
+       btn.classList.add('flip');
+     
+       setTimeout(()=>{
+        this.setState({flipped: true,
+          flippedText: 'Show Whole Map'});
+       },150)
+       
+     } else {
+      this.map.setLayoutProperty('segments', 'visibility', 'visible');
+      this.map.setLayoutProperty('connectionSegs', 'visibility', 'visible');
+      this.map.setLayoutProperty('segmentDivPoints', 'visibility', 'visible');
+      btn.classList.remove('flip');
+       btn.classList.add('flipBack');
+       this.setState({flipped: false,
+                     flippedText: 'Show Local Map'});
+     }
+   }
   /////////////////////////////////////////
   _onViewportChange(viewport){
       this.setState({
@@ -666,7 +818,7 @@ class App extends Component {
     }
   render() {
     return (
-      <div className="App">
+      <div id="App" className="App">
       
      <ReactMapGL
       ref={(reactMap) => { this.reactMap = reactMap }} 
@@ -717,6 +869,10 @@ class App extends Component {
         <div className="controlsTitleItem" >
             <i onClick={this.removeEgoLayer} className="fas fa-recycle"></i>
                Clear Ego
+        </div>
+        <div id="localMapBtn" onClick={this.flipLocalMapBtn} className="localMapBtn controlsTitleItem" >
+             <i className="fas fa-map-signs"></i>
+               {this.state.flippedText}
         </div>
         </div>
          {/*//////////////////////////////////////////////////////*/}
