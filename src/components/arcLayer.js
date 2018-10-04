@@ -1,35 +1,44 @@
 import React, { Component } from 'react'
-import DeckGL, {GeoJsonLayer, ArcLayer, LineLayer} from 'deck.gl';
-
+import DeckGL, {IconLayer} from 'deck.gl';
+import carIcon from '../assets/car-icon-deckgl.png'
 export default class arcLayer extends Component {
 
 
 render() {
-   /* if (!this.props.arcs) {
-     
-      return null;
-    }*/
-    if (!this.props.segments) {
-     
-      return null;
-    }
+ 
+
+   var data = [
+       { prevCoordinates: this.props.egoPoints[0],
+         directionCoordinates:this.props.egoPoints[1]}]
+                 
+       
    
     const layers = [
-        /*,
-      new ArcLayer({
-        id: 'arc',
-        data: this.props.arcs,
-        pickable:true,
-        getSourcePosition: d => d.from,
-        getTargetPosition: d => d.to,
-        getSourceColor:  [12, 44, 132],
-        getTargetColor:  [254, 217, 118],
-        strokeWidth: 5
-      })*/
+        
+      new IconLayer({
+          id: 'icon-layer',
+          data: data,
+          pickable: true,
+          iconAtlas: carIcon,
+          iconMapping: {
+            marker: {
+              x: 0,
+              y: 0,
+              width: 80,
+              height: 185,
+             
+            }
+          },
+          sizeScale: 20,
+          getSize: d=>7,
+          getPosition: d=>d.prevCoordinates,
+          getIcon: d=>'marker',
+          getAngle: d=> 30
+      })
     ];
 
     return (
-      <DeckGL {...this.props.viewport} layers={layers} onWebGLInitialized={this._initialize}/>
+      <DeckGL {...this.props.viewport} layers={layers}/>
     );
   }
 

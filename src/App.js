@@ -2,7 +2,7 @@
 import React, {Component} from 'react';
 import ReactMapGL from 'react-map-gl';
 import mapboxgl from 'mapbox-gl';
-import ArcLayer from './components/arcLayer';
+import DeckLayers from './components/arcLayer';
 import io from 'socket.io-client';
 //import roads from './assets/pruned_extra_roads.json';
 //import testerRoads from './assets/tester.json';
@@ -22,16 +22,18 @@ class App extends Component {
       connections:[],
       hoveredSeg:{},
       selectedSeg: {},
+      center:[-71.063,42.558],
       selectedSegToolTip: {},
       currAndPrev:[],
       currAndPrevForClick:[],
       startingPoint: [-71.063,42.558],
       featureObjFromArr:{},
       egoPoints: {},
+      stopEgo:false,
+      egoPosition: [],
       viewport: {
         width: window.innerWidth,
         height: window.innerHeight,
-        //center:[-71.063,42.558],
         longitude: -71.063,
         latitude: 42.558,
         zoom:11,
@@ -49,6 +51,7 @@ class App extends Component {
       this.socket.on('pretendData', (data)=>{
         console.log(data)
       })
+      
       this.socket.on('firstPoint', (firstPoint)=>{
         this._onViewportChange({
           longitude: firstPoint[0],
@@ -94,70 +97,76 @@ class App extends Component {
          
        })
       this.socket.on('sendingPoint', (point) => {
-        this.egoCounter+=1;
-        this.socketIdsArr.push(point[0].id);
-          if(this.egoCounter==1){
-            if(point[0].properties.connections){
-              let connections = point[0].properties.connections;
-
-              this.set_click_connection_color("clickConnections", point[0].id, connections.continue, "light-blue");
-              this.set_click_connection_color("clickConnections", point[0].id, connections.merge, "red");
-              this.set_click_connection_color("clickConnections", point[0].id, connections.split, "yellow");
-              this.set_click_connection_color("clickConnections", point[0].id, connections.right, "blue");
-              this.set_click_connection_color("clickConnections", point[0].id, connections.left, "purple");
-              this.map.setFeatureState({source: 'clickConnections', id: point[0].id}, { selectedConnections: true,
-                                                                                        color: 'green' })
-            } 
-          }
-        if(this.egoCounter>1){
-          if(point[0].id!==point[1].id){
-            if(point[1]){
-              if(point[1].properties.connections){
-                let prevConnections = point[1].properties.connections;
-               this.set_click_connection_color("clickConnections", null, prevConnections.continue, "light-blue", false);
-               this.set_click_connection_color("clickConnections", null, prevConnections.merge, "red", false);
-               this.set_click_connection_color("clickConnections", null, prevConnections.split, "yellow", false);
-               this.set_click_connection_color("clickConnections", null, prevConnections.right, "blue", false);
-               this.set_click_connection_color("clickConnections", null, prevConnections.left, "purple", false);
-               this.map.setFeatureState({source: 'clickConnections', id: point[1].id}, { selectedConnections: false,
-                color: 'green' })
-              }
-            }
+        console.log('h')
+        if(this.state.stopEgo==false){
+          this.egoCounter+=1;        
+          this.socketIdsArr.push(point[0].id);
+            if(this.egoCounter==1){
               if(point[0].properties.connections){
                 let connections = point[0].properties.connections;
-                
+
                 this.set_click_connection_color("clickConnections", point[0].id, connections.continue, "light-blue");
                 this.set_click_connection_color("clickConnections", point[0].id, connections.merge, "red");
                 this.set_click_connection_color("clickConnections", point[0].id, connections.split, "yellow");
                 this.set_click_connection_color("clickConnections", point[0].id, connections.right, "blue");
                 this.set_click_connection_color("clickConnections", point[0].id, connections.left, "purple");
                 this.map.setFeatureState({source: 'clickConnections', id: point[0].id}, { selectedConnections: true,
-                  color: 'green' })
-               } 
-               
+                                                                                          color: 'green' })
+              } 
             }
-         }   
-          this.car.setLngLat(point[0].geometry.coordinates[0]);
+          if(this.egoCounter>1){
+            this.setState({egoPosition:[point[0].geometry.coordinates[0],point[0].geometry.coordinates[0]]}); 
+            if(point[0].id!==point[1].id){
+              if(point[1]){
+                if(point[1].properties.connections){
+                  let prevConnections = point[1].properties.connections;
+                this.set_click_connection_color("clickConnections", null, prevConnections.continue, "light-blue", false);
+                this.set_click_connection_color("clickConnections", null, prevConnections.merge, "red", false);
+                this.set_click_connection_color("clickConnections", null, prevConnections.split, "yellow", false);
+                this.set_click_connection_color("clickConnections", null, prevConnections.right, "blue", false);
+                this.set_click_connection_color("clickConnections", null, prevConnections.left, "purple", false);
+                this.map.setFeatureState({source: 'clickConnections', id: point[1].id}, { selectedConnections: false,
+                  color: 'green' })
+                }
+              }
+                if(point[0].properties.connections){
+                  let connections = point[0].properties.connections;
+                  
+                  this.set_click_connection_color("clickConnections", point[0].id, connections.continue, "light-blue");
+                  this.set_click_connection_color("clickConnections", point[0].id, connections.merge, "red");
+                  this.set_click_connection_color("clickConnections", point[0].id, connections.split, "yellow");
+                  this.set_click_connection_color("clickConnections", point[0].id, connections.right, "blue");
+                  this.set_click_connection_color("clickConnections", point[0].id, connections.left, "purple");
+                  this.map.setFeatureState({source: 'clickConnections', id: point[0].id}, { selectedConnections: true,
+                    color: 'green' })
+                } 
+                
+              }
+          }   
+            this.car.setLngLat(point[0].geometry.coordinates[0]);
 
-          let promise = new Promise((resolve,reject)=>{
-          let coords = this.state.egoPoints.features[0].geometry.coordinates;
-          let withNewPoint = JSON.parse(JSON.stringify(this.state.egoPoints));
-          coords.push(point[0].geometry.coordinates[0]);
-          withNewPoint.features[0].geometry.coordinates = coords;
-          this.setState({egoPoints:withNewPoint});         
-          resolve();
-          });
-          promise.then(()=>{
-            this.map.getSource('trace').setData(this.state.egoPoints);
-            this._onViewportChange({
-              longitude: point[0].geometry.coordinates[0][0],
-              latitude: point[0].geometry.coordinates[0][1],
+            let promise = new Promise((resolve,reject)=>{
+            let coords = this.state.egoPoints.features[0].geometry.coordinates;
+            let withNewPoint = JSON.parse(JSON.stringify(this.state.egoPoints));
+            coords.push(point[0].geometry.coordinates[0]);
+            withNewPoint.features[0].geometry.coordinates = coords;
+            this.setState({egoPoints:withNewPoint});         
+            resolve();
+            });
+            promise.then(()=>{
+              this.map.getSource('trace').setData(this.state.egoPoints);
+              this._onViewportChange({
+                longitude: point[0].geometry.coordinates[0][0],
+                latitude: point[0].geometry.coordinates[0][1],
+                
+              })
               
             })
-            
-          })
-          
+         }
       })
+       this.socket.on('finished',(points)=>{
+         
+       })
     })
     
   }
@@ -241,13 +250,13 @@ class App extends Component {
        })
        this.setState({featureObjFromArr});
    }
-   componentDidMount(){ 
-    this.processData(wholeMap);
-    window.addEventListener('resize', this._resize);
-    this._resize();          
-    this.map = this.reactMap.getMap();
-    this.map._interactive=true;
-    this.map.on('load', () => {
+  componentDidMount(){ 
+      this.processData(wholeMap);
+      window.addEventListener('resize', this._resize);
+      this._resize();          
+      this.map = this.reactMap.getMap();
+      this.map._interactive=true;
+      this.map.on('load', () => {
       
        //console.log(this.state.data)  
           this.map.addLayer({
@@ -258,13 +267,13 @@ class App extends Component {
                     "data": {
                         "type": "FeatureCollection",
                         "features": this.state.i95Points
-                    }
+                     }
                         
-                },
+                 },
                 "layout": {
                     "line-join": "miter",
                     "line-cap": "butt"
-                },
+                 },
                 "paint": {
                     //"line-color": ['get','color'],
                     "line-width": 5,
@@ -307,6 +316,7 @@ class App extends Component {
                 ]            
             }     
         }) 
+        
           this.map.addLayer({
             "id": "connectionSegs",
             "type": "line",
@@ -352,9 +362,9 @@ class App extends Component {
             },
               "circle-color": "black"
               }
-      });
-     })   
-   }
+         });
+       })   
+     }
     
   componentWillUnmount() {
     window.removeEventListener('resize', this._resize);
@@ -467,6 +477,7 @@ class App extends Component {
    }
   
   removeEgoLayer = () =>{
+    if(this.egoCounter>0){
       this.car.remove();
       document.getElementById('localMapBtn').style.pointerEvents = 'none';
       document.getElementById('localMapBtn').style.color = 'gray';
@@ -474,19 +485,25 @@ class App extends Component {
       this.map.removeSource('trace');
       document.getElementById('file-input2').value = '';  
       if(this.socketIdsArr){
-        let lastConnections = this.state.featureObjFromArr[this.socketIdsArr[this.socketIdsArr.length-1]].properties.connections;
-        this.set_click_connection_color("clickConnections", null, lastConnections.continue, "light-blue", false);
-        this.set_click_connection_color("clickConnections", null, lastConnections.merge, "red", false);
-        this.set_click_connection_color("clickConnections", null, lastConnections.split, "yellow", false);
-        this.set_click_connection_color("clickConnections", null, lastConnections.right, "blue", false);
-        this.set_click_connection_color("clickConnections", null, lastConnections.left, "purple", false);
-        this.map.setFeatureState({source: 'clickConnections', id: this.socketIdsArr[this.socketIdsArr.length-1].id}, { selectedConnections: false,
-                                                                                                                       color: 'green'           });        
-      }
+          if(this.state.featureObjFromArr[this.socketIdsArr[this.socketIdsArr.length-1]].properties.connections){
+              let lastConnections = this.state.featureObjFromArr[this.socketIdsArr[this.socketIdsArr.length-1]].properties.connections;
+              this.set_click_connection_color("clickConnections", null, lastConnections.continue, "light-blue", false);
+              this.set_click_connection_color("clickConnections", null, lastConnections.merge, "red", false);
+              this.set_click_connection_color("clickConnections", null, lastConnections.split, "yellow", false);
+              this.set_click_connection_color("clickConnections", null, lastConnections.right, "blue", false);
+              this.set_click_connection_color("clickConnections", null, lastConnections.left, "purple", false);
+              this.map.setFeatureState({source: 'clickConnections', id: this.socketIdsArr[this.socketIdsArr.length-1].id}, { selectedConnections: false,
+                                                                                                                            color: 'green'           });        
+           }
+        }
       this.socketIdsArr = [];
       this.egoCounter = 0;
+      this.socket.emit('breakEgo', 'breakEgo');
+      this.setState({stopEgo:true})
+      }
    }
   handleEgoPoints = (e) => {
+    this.setState({stopEgo:false})
       document.getElementById('localMapBtn').style.pointerEvents = 'auto';
       document.getElementById('localMapBtn').style.color = 'white';
       let reader = new FileReader();
@@ -829,12 +846,8 @@ class App extends Component {
           onClick={this.click}
           mapboxApiAccessToken={MAPBOX_TOKEN}>
           
-          {/*<ArcLayer
-            testerRoads={this.state.testerRoads}
-            onHover={this.onHover}
-            viewport={this.state.viewport}
-            //arcs={this.state.points} 
-          segments={this.state.segments}/>*/}
+          {/*<DeckLayers egoPoints={this.state.egoPosition} viewport={this.state.viewport}/>*/}
+
      </ReactMapGL>
      <i id="navBtn" onClick={this.pullOutOrInNav} className="fas fa-bars fa-bars-outside"></i>{/* icon that pulls nav out*/}
         <div id="controls">{/*controls is the slide navbar*/}
